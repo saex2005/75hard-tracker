@@ -26,6 +26,14 @@ export type WeightCheckpoint = {
   created_at: string
 }
 
+export type PushSubscription = {
+  id: string
+  endpoint: string
+  p256dh: string
+  auth: string
+  created_at: string
+}
+
 export type ChallengeState = {
   id: number
   current_run_start: string
@@ -104,6 +112,24 @@ export type Database = {
           current_run_start?: string
           total_restarts?: number
           best_streak?: number
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: PushSubscription
+        Insert: {
+          id?: string
+          endpoint: string
+          p256dh: string
+          auth: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          endpoint?: string
+          p256dh?: string
+          auth?: string
+          created_at?: string
         }
         Relationships: []
       }

@@ -8,6 +8,7 @@ import { calcDayNumber, todayISO, isPastDay } from '@/lib/utils'
 import { CHALLENGE_CONFIG, BOTTLES_PER_DAY } from '@/config/challenge'
 import ProgressBar from '@/components/ProgressBar'
 import TaskCard from '@/components/TaskCard'
+import NotificationPrompt from '@/components/NotificationPrompt'
 import WaterCounter from '@/components/WaterCounter'
 import MinutePicker from '@/components/MinutePicker'
 import DayFailed from '@/components/DayFailed'
@@ -294,6 +295,8 @@ export default function HomePage() {
           </p>
         )}
       </header>
+
+      <NotificationPrompt />
 
       {/* Tasks */}
       <section aria-labelledby="tasks-heading">

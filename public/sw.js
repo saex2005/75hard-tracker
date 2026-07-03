@@ -1,4 +1,4 @@
-const CACHE_NAME = '75hard-v1'
+const CACHE_NAME = '75hard-v2'
 const STATIC_ASSETS = ['/', '/historia', '/stats', '/fotos', '/peso']
 
 self.addEventListener('install', (event) => {
@@ -29,34 +29,19 @@ self.addEventListener('fetch', (event) => {
   )
 })
 
-// Notificaciones a las 21:00
-self.addEventListener('message', (event) => {
-  if (event.data?.type === 'SCHEDULE_NOTIFICATION') {
-    const { pendingTasks, dayNumber } = event.data
-
-    const now = new Date()
-    const target = new Date()
-    target.setHours(21, 0, 0, 0)
-
-    if (now >= target) return
-
-    const delay = target.getTime() - now.getTime()
-
-    setTimeout(() => {
-      self.registration.getNotifications().then((existing) => {
-        if (existing.length > 0) return
-
-        self.registration.showNotification('75 Hard', {
-          body: `Quedan ${pendingTasks} tasks para el Día ${dayNumber}. No rompas la racha 🔥`,
-          icon: '/icons/icon-192.png',
-          badge: '/icons/icon-192.png',
-          tag: 'daily-reminder',
-          renotify: false,
-          data: { url: '/' },
-        })
-      })
-    }, delay)
-  }
+// Push notifications desde servidor
+self.addEventListener('push', (event) => {
+  const data = event.data?.json() ?? {}
+  event.waitUntil(
+    self.registration.showNotification(data.title ?? '75 Hard', {
+      body: data.body ?? 'Revisá tus tasks de hoy.',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      tag: 'daily-reminder',
+      renotify: true,
+      data: { url: data.url ?? '/' },
+    })
+  )
 })
 
 self.addEventListener('notificationclick', (event) => {
