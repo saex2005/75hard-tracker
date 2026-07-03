@@ -46,7 +46,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-bg text-text-primary`}
       >
         <div className="min-h-dvh flex flex-col">
-          <main className="flex-1 pb-20">{children}</main>
+          <main className="flex-1 pb-20" style={{ paddingTop: 'env(safe-area-inset-top)' }}>{children}</main>
           <BottomNav />
         </div>
         <script
