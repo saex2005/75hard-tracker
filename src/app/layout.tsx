@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import localFont from 'next/font/local'
 import './globals.css'
 import BottomNav from '@/components/BottomNav'
+import NotificationPrompt from '@/components/NotificationPrompt'
 
 const geistSans = localFont({
   src: './fonts/GeistVF.woff',
@@ -46,7 +47,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-bg text-text-primary`}
       >
         <div className="min-h-dvh flex flex-col">
-          <main className="flex-1 pb-20" style={{ paddingTop: 'env(safe-area-inset-top)' }}>{children}</main>
+          <div className="px-4 pt-2" style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}>
+            <NotificationPrompt />
+          </div>
+          <main className="flex-1 pb-20">{children}</main>
           <BottomNav />
         </div>
         <script
