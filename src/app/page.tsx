@@ -36,7 +36,7 @@ export default function HomePage() {
       .single()
 
     if (csError || !cs) {
-      setState({ status: 'error', message: 'No se pudo cargar el estado del reto.' })
+      setState({ status: 'error', message: csError?.message ?? 'Sin datos en challenge_state' })
       return
     }
 
