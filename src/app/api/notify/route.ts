@@ -3,14 +3,15 @@ import { createClient } from '@supabase/supabase-js'
 import webpush from 'web-push'
 import type { Database } from '@/lib/supabase'
 
-// Llamado por n8n en 3 horarios distintos vía ?type=morning|midday|evening
-// Authorization: Bearer <CRON_SECRET>
-
 webpush.setVapidDetails(
   process.env.VAPID_EMAIL!,
   process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
   process.env.VAPID_PRIVATE_KEY!
 )
+
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
 
 async function sendPush(
   subs: { endpoint: string; p256dh: string; auth: string }[],
@@ -50,9 +51,12 @@ export async function GET(request: NextRequest) {
     .eq('date', todayISO)
     .single()
 
-  // Si el día no existe o ya está cerrado, no hay nada que notificar
-  if (!today || today.completed) {
+  if (!today) {
     return NextResponse.json({ sent: 0, reason: 'no active day' })
+  }
+
+  if (today.completed && type !== 'evening') {
+    return NextResponse.json({ sent: 0, reason: 'day already completed' })
   }
 
   const { data: subs } = await supabase.from('push_subscriptions').select('*')
@@ -60,45 +64,136 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ sent: 0, reason: 'no subscriptions' })
   }
 
-  const dayNumber = today.day_number
-  const pendingTasks = [
-    !today.gym_done,
-    !today.cardio_done,
-    !today.diet_done,
-    !today.reading_done,
-    !today.photo_url,
-  ].filter(Boolean).length
+  const d = today.day_number
   const BOTTLES_GOAL = 8
-  const waterPct = today.water_bottles / BOTTLES_GOAL
-
   let sent = 0
 
-  if (type === 'morning') {
-    sent = await sendPush(
-      subs,
-      `75 Hard — Día ${dayNumber}`,
-      'Arrancó el día. Completá las 6 tasks antes de las 21hs.'
-    )
+  // --- KICKOFF 07:30 ARS ---
+  if (type === 'kickoff') {
+    const title = `75 Hard — Día ${d} de 75`
+    const body = pick([
+      `Otro día. Sin excusas, sin cheat days. A romperla.`,
+      `Día ${d}. La mayoría no llega hasta acá. Vos sí.`,
+      `Arrancó el día ${d}. Seis tasks. Las hacés todas.`,
+      `Día ${d} de ${75 - d + 1} que quedan. Empezá por el gym.`,
+      `Cada día que completás es uno que no podés perder. Arrancá.`,
+      d <= 7
+        ? `Primera semana. La más difícil. No la cagas ahora.`
+        : d <= 30
+        ? `Mes uno casi completo. Seguís en pie.`
+        : d <= 60
+        ? `Más de la mitad. No aflojés ahora.`
+        : `Recta final. Quedan ${75 - d + 1} días. No pares.`,
+    ])
+    sent = await sendPush(subs, title, body)
   }
 
-  if (type === 'midday') {
-    const waterLow = waterPct < 0.5
-    const manyPending = pendingTasks >= 3
+  // --- AGUA 11:00 ARS ---
+  if (type === 'water') {
+    const bottles = today.water_bottles
+    if (bottles >= 3) {
+      return NextResponse.json({ sent: 0, reason: 'water on track' })
+    }
+    const falta = BOTTLES_GOAL - bottles
+    const body = pick([
+      `Llevás ${bottles}/${BOTTLES_GOAL} botellas. Tomá agua ahora, no lo dejés para la noche.`,
+      `${bottles} botellas. Te faltan ${falta}. A mitad del día ya deberías tener 4.`,
+      `El galón no se completa solo. ${bottles}/${BOTTLES_GOAL}. Dale con el agua.`,
+      `Agua: ${bottles}/${BOTTLES_GOAL}. Si lo dejás para la noche, va a ser un infierno.`,
+    ])
+    sent = await sendPush(subs, '💧 Agua — chequeá el progreso', body)
+  }
 
-    // Solo notificar si hay algo urgente
-    if (!waterLow && !manyPending) {
-      return NextResponse.json({ sent: 0, reason: 'on track, no notification needed' })
+  // --- PROGRESO GENERAL 14:00 ARS ---
+  if (type === 'progress') {
+    const done = [today.gym_done, today.cardio_done, today.diet_done, today.reading_done, !!today.photo_url].filter(Boolean).length
+    const pending = 5 - done
+    const water = today.water_bottles
+
+    if (pending === 0 && water >= BOTTLES_GOAL) {
+      return NextResponse.json({ sent: 0, reason: 'all done' })
     }
 
-    const parts: string[] = []
-    if (waterLow) parts.push(`Agua: ${today.water_bottles}/${BOTTLES_GOAL} botellas.`)
-    if (manyPending) parts.push(`Faltan ${pendingTasks} tasks.`)
+    let body: string
+    if (pending === 0) {
+      body = `Tasks listas. Solo te falta el agua — llevás ${water}/${BOTTLES_GOAL} botellas.`
+    } else if (done === 0) {
+      body = pick([
+        `Son las 14hs y no marcaste nada todavía. Arrancá ya.`,
+        `Ninguna task completada. El día no se va a completar solo.`,
+      ])
+    } else {
+      body = `${done}/5 tasks listas. Faltan ${pending}. Agua: ${water}/${BOTTLES_GOAL}. Vamos.`
+    }
 
-    sent = await sendPush(subs, '75 Hard — Chequeo mediodía', parts.join(' '))
+    sent = await sendPush(subs, `Día ${d} — estado a las 14hs`, body)
   }
 
+  // --- GYM + CARDIO 17:30 ARS ---
+  if (type === 'gymcardio') {
+    const gymPending = !today.gym_done
+    const cardioPending = !today.cardio_done
+
+    if (!gymPending && !cardioPending) {
+      return NextResponse.json({ sent: 0, reason: 'both done' })
+    }
+
+    let body: string
+    if (gymPending && cardioPending) {
+      body = pick([
+        'Gym y cardio sin marcar. Quedan pocas horas. No lo dejés para después.',
+        'Dos entrenamientos pendientes. Son 90 minutos en total. Ahora.',
+        'Sin gym, sin cardio. Si no arrancás ahora, el día se te va.',
+      ])
+    } else if (gymPending) {
+      body = pick([
+        'Cardio listo, gym pendiente. 45 minutos y cerrás esa task.',
+        'Te falta el gym. Terminalo hoy.',
+      ])
+    } else {
+      body = pick([
+        'Gym listo, cardio pendiente. Salí a correr aunque sea.',
+        'El cardio outdoor sigue pendiente. 45 minutos afuera.',
+      ])
+    }
+
+    sent = await sendPush(subs, '💪 Gym / Cardio pendiente', body)
+  }
+
+  // --- LECTURA + FOTO 19:30 ARS ---
+  if (type === 'readingphoto') {
+    const readingPending = !today.reading_done
+    const photoPending = !today.photo_url
+
+    if (!readingPending && !photoPending) {
+      return NextResponse.json({ sent: 0, reason: 'both done' })
+    }
+
+    let body: string
+    if (readingPending && photoPending) {
+      body = pick([
+        '10 páginas y una foto. 15 minutos en total. No los dejes para mañana.',
+        'Lectura y foto sin hacer. Son las más fáciles — hacelas ya.',
+        'Dos tasks rápidas pendientes: foto y lectura. Cerrá eso ahora.',
+      ])
+    } else if (readingPending) {
+      body = pick([
+        '10 páginas. Las podés leer en 15 minutos. Agarra el libro.',
+        'La lectura sigue pendiente. No te vayas a dormir sin hacerla.',
+      ])
+    } else {
+      body = pick([
+        'La foto del día no está. 30 segundos y listo.',
+        'Falta la foto de progreso. Hacela antes de que se te olvide.',
+      ])
+    }
+
+    sent = await sendPush(subs, '📖 📸 Últimos detalles', body)
+  }
+
+  // --- CIERRE + RESET 21:05 ARS ---
   if (type === 'evening') {
-    // Reset si el día anterior no fue completado
+    // Reset si ayer no fue completado
     const yesterday = new Date(now)
     yesterday.setDate(yesterday.getDate() - 1)
     const yesterdayISO = yesterday.toISOString().split('T')[0]
@@ -109,6 +204,7 @@ export async function GET(request: NextRequest) {
       .eq('date', yesterdayISO)
       .single()
 
+    let reset = false
     if (yDay && !yDay.completed) {
       const { data: cs } = await supabase
         .from('challenge_state')
@@ -123,16 +219,40 @@ export async function GET(request: NextRequest) {
           total_restarts: (cs?.total_restarts ?? 0) + 1,
         })
         .eq('id', 1)
+      reset = true
     }
 
-    const body =
-      pendingTasks === 0
-        ? 'Completaste todo. Cerrá el día en la app.'
-        : pendingTasks === 1
-        ? 'Te falta 1 task. No rompas la racha.'
-        : `Te faltan ${pendingTasks} tasks. No rompas la racha.`
+    if (today.completed) {
+      return NextResponse.json({ sent: 0, reset, reason: 'day already completed' })
+    }
 
-    sent = await sendPush(subs, `75 Hard — Cerrá el Día ${dayNumber}`, body)
+    const pending = [
+      !today.gym_done,
+      !today.cardio_done,
+      !today.diet_done,
+      !today.reading_done,
+      !today.photo_url,
+      today.water_bottles < BOTTLES_GOAL,
+    ].filter(Boolean).length
+
+    let body: string
+    if (pending === 0) {
+      body = 'Completaste todo. Abrí la app y cerrá el día.'
+    } else if (pending === 1) {
+      body = pick([
+        'Te falta 1 sola task. No rompas la racha por una task.',
+        '1 task pendiente. Terminala y cerrá el día.',
+      ])
+    } else {
+      body = pick([
+        `${pending} tasks pendientes. Todavía llegás. Arrancá ya.`,
+        `Quedan ${pending} tasks para cerrar el Día ${d}. No lo dejes ir.`,
+        `Día ${d} en riesgo. ${pending} tasks sin completar. Movete.`,
+      ])
+    }
+
+    sent = await sendPush(subs, `Día ${d} — cerrá el día`, body)
+    return NextResponse.json({ sent, total: subs.length, type, reset })
   }
 
   return NextResponse.json({ sent, total: subs.length, type })
