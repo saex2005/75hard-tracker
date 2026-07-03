@@ -15,6 +15,7 @@ import PhotoUpload from '@/components/PhotoUpload'
 
 type AppState =
   | { status: 'loading' }
+  | { status: 'pending'; startDate: string; daysLeft: number }
   | { status: 'failed'; dayNumber: number; streak: number }
   | { status: 'complete' }
   | { status: 'active'; day: DayRecord; challengeState: ChallengeState; dayNumber: number }
@@ -41,6 +42,11 @@ export default function HomePage() {
     }
 
     const dayNumber = calcDayNumber(cs.current_run_start)
+
+    if (dayNumber < 1) {
+      setState({ status: 'pending', startDate: cs.current_run_start, daysLeft: 1 - dayNumber })
+      return
+    }
 
     if (dayNumber > CHALLENGE_CONFIG.totalDays) {
       setState({ status: 'complete' })
@@ -216,6 +222,23 @@ export default function HomePage() {
             Reintentar
           </button>
         </div>
+      </div>
+    )
+  }
+
+  if (state.status === 'pending') {
+    const start = new Date(state.startDate + 'T00:00:00')
+    const formatted = start.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })
+    return (
+      <div className="min-h-dvh flex flex-col items-center justify-center px-6 text-center space-y-3">
+        <p className="text-accent text-xs font-mono tracking-[0.3em] uppercase">Próximamente</p>
+        <h1 className="text-4xl font-black tracking-tight">75 Hard</h1>
+        <p className="text-[#A1A1AA] text-base">
+          El reto empieza el <span className="text-[#FAFAFA] font-semibold">{formatted}</span>.
+        </p>
+        <p className="text-[#52525B] text-sm font-mono tabular-nums">
+          {state.daysLeft === 1 ? 'Mañana arrancamos.' : `Faltan ${state.daysLeft} días.`}
+        </p>
       </div>
     )
   }
