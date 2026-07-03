@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { supabase, type DayRecord, type ChallengeState, type WeightCheckpoint } from '@/lib/supabase'

@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useEffect, useState, useCallback } from 'react'
 import { supabase, type DayRecord, type ChallengeState } from '@/lib/supabase'
 import { calcDayNumber, todayISO, isPastDay } from '@/lib/utils'

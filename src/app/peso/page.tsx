@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useEffect, useState } from 'react'
 import { supabase, type WeightCheckpoint } from '@/lib/supabase'
 import { formatDate, todayISO } from '@/lib/utils'
