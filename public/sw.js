@@ -18,10 +18,14 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return
   const url = new URL(event.request.url)
+  // Solo interceptar requests del mismo origen — nunca Supabase ni externos
+  if (url.origin !== self.location.origin) return
   if (url.pathname.startsWith('/api/')) return
 
   event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
+    fetch(event.request).catch(() =>
+      caches.match(event.request).then((r) => r ?? new Response('', { status: 408 }))
+    )
   )
 })
 
