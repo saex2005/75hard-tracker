@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { supabase, type DayRecord } from '@/lib/supabase'
 import { formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+import { BOTTLES_PER_DAY } from '@/config/challenge'
 
 export default function HistoriaPage() {
   const [days, setDays] = useState<DayRecord[]>([])
@@ -25,12 +26,16 @@ export default function HistoriaPage() {
 
   if (loading) {
     return (
-      <div className="min-h-dvh flex items-center justify-center">
-        <div
-          className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin"
-          role="status"
-          aria-label="Cargando historial..."
-        />
+      <div className="max-w-md mx-auto px-4 pt-6" aria-busy="true" aria-label="Cargando historial...">
+        <div className="mb-6 space-y-2">
+          <div className="h-9 w-40 bg-surface2 rounded-lg animate-pulse" />
+          <div className="h-3 w-24 bg-surface2 rounded animate-pulse" />
+        </div>
+        <div className="space-y-2">
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="h-[60px] bg-surface border border-[#262626] rounded-xl animate-pulse" />
+          ))}
+        </div>
       </div>
     )
   }
@@ -55,7 +60,7 @@ export default function HistoriaPage() {
             const completed = day.completed
             const gymOk = day.gym_done
             const cardioOk = day.cardio_done
-            const waterOk = day.water_bottles >= 7
+            const waterOk = day.water_bottles >= BOTTLES_PER_DAY
             const dietOk = day.diet_done
             const readingOk = day.reading_done
             const photoOk = !!day.photo_url

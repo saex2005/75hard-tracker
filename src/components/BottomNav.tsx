@@ -21,7 +21,7 @@ export default function BottomNav() {
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       aria-label="Navegación principal"
     >
-      <ul className="flex items-stretch h-[60px] max-w-md mx-auto px-2">
+      <ul className="flex items-stretch h-16 max-w-md mx-auto px-2">
         {links.map(({ href, label, icon: Icon }) => {
           const active = pathname === href
           return (

@@ -28,7 +28,7 @@ export default function DayFailed({ dayNumber, streak, onRestart, loading }: Day
         </p>
       )}
 
-      <blockquote className="italic text-[#52525B] text-sm max-w-xs mb-12 leading-relaxed">
+      <blockquote className="italic text-[#71717A] text-sm max-w-xs mb-12 leading-relaxed">
         &ldquo;No importa cuántas veces caés, importa cuántas te levantás.&rdquo;
       </blockquote>
 

@@ -68,12 +68,15 @@ export default function PesoPage() {
 
   if (loading) {
     return (
-      <div className="min-h-dvh flex items-center justify-center">
-        <div
-          className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin"
-          role="status"
-          aria-label="Cargando..."
-        />
+      <div className="max-w-md mx-auto px-4 pt-6 space-y-6" aria-busy="true" aria-label="Cargando...">
+        <div className="h-9 w-24 bg-surface2 rounded-lg animate-pulse" />
+        <div className="h-[220px] bg-surface border border-[#262626] rounded-xl animate-pulse" />
+        <div className="space-y-2">
+          <div className="h-3 w-24 bg-surface2 rounded animate-pulse mb-3" />
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-14 bg-surface border border-[#262626] rounded-xl animate-pulse" />
+          ))}
+        </div>
       </div>
     )
   }

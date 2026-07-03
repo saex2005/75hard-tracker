@@ -36,9 +36,6 @@ export default function MinutePicker({ minutes, onChange, label, disabled }: Min
           </button>
         ))}
       </div>
-      {minutes > 0 && (
-        <p className="text-xs text-[#A1A1AA] font-mono tabular-nums">{minutes} minutos registrados</p>
-      )}
     </div>
   )
 }

@@ -15,9 +15,9 @@ export default function TaskCard({ icon, label, done, children, onToggle, disabl
   return (
     <div
       className={cn(
-        'rounded-xl border p-4 transition-all duration-200',
+        'rounded-xl border p-4 transition-colors duration-300',
         done
-          ? 'bg-green-500/5 border-green-500/30'
+          ? 'bg-green-500/5 border-green-500/25'
           : 'bg-surface border-[#262626]'
       )}
     >
@@ -57,12 +57,7 @@ export default function TaskCard({ icon, label, done, children, onToggle, disabl
 
         <span className="text-base" aria-hidden="true">{icon}</span>
 
-        <span
-          className={cn(
-            'font-semibold text-sm flex-1',
-            done ? 'text-green-400' : 'text-[#FAFAFA]'
-          )}
-        >
+        <span className="font-semibold text-sm flex-1 text-[#FAFAFA]">
           {label}
         </span>
       </div>

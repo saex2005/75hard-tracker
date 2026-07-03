@@ -188,12 +188,21 @@ export default function HomePage() {
 
   if (state.status === 'loading') {
     return (
-      <div className="min-h-dvh flex items-center justify-center">
-        <div
-          className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin"
-          role="status"
-          aria-label="Cargando..."
-        />
+      <div className="max-w-md mx-auto px-4 pt-6 space-y-5" aria-busy="true" aria-label="Cargando...">
+        <div className="space-y-3">
+          <div className="flex items-baseline justify-between">
+            <div className="h-12 w-36 bg-surface2 rounded-lg animate-pulse" />
+            <div className="h-4 w-10 bg-surface2 rounded animate-pulse" />
+          </div>
+          <div className="h-1.5 bg-surface2 rounded-full animate-pulse" />
+          <div className="h-3 w-28 bg-surface2 rounded animate-pulse" />
+        </div>
+        <div className="space-y-2">
+          <div className="h-3 w-24 bg-surface2 rounded animate-pulse mb-3" />
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-[60px] bg-surface border border-[#262626] rounded-xl animate-pulse" />
+          ))}
+        </div>
       </div>
     )
   }
@@ -255,10 +264,12 @@ export default function HomePage() {
           <h1 className="text-5xl font-black tracking-tighter">Día {dayNumber}</h1>
           <span className="text-sm text-[#A1A1AA] font-mono">de 75</span>
         </div>
-        <ProgressBar current={dayNumber} total={CHALLENGE_CONFIG.totalDays} />
-        <p className="text-xs text-[#A1A1AA] font-medium">
-          🔥 Racha: {dayNumber > 1 ? `${dayNumber - 1} días` : 'recién arrancás'}
-        </p>
+        <ProgressBar current={dayNumber} total={CHALLENGE_CONFIG.totalDays} showLabel={false} />
+        {dayNumber > 1 && (
+          <p className="text-xs text-[#A1A1AA] font-medium tabular-nums">
+            Racha · {dayNumber - 1} {dayNumber - 1 === 1 ? 'día' : 'días'}
+          </p>
+        )}
       </header>
 
       {/* Tasks */}

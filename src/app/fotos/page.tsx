@@ -45,12 +45,16 @@ export default function FotosPage() {
 
   if (loading) {
     return (
-      <div className="min-h-dvh flex items-center justify-center">
-        <div
-          className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin"
-          role="status"
-          aria-label="Cargando fotos..."
-        />
+      <div className="max-w-md mx-auto px-4 pt-6" aria-busy="true" aria-label="Cargando fotos...">
+        <div className="mb-6 space-y-2">
+          <div className="h-9 w-24 bg-surface2 rounded-lg animate-pulse" />
+          <div className="h-3 w-32 bg-surface2 rounded animate-pulse" />
+        </div>
+        <div className="grid grid-cols-3 gap-1.5">
+          {[...Array(9)].map((_, i) => (
+            <div key={i} className="aspect-square bg-surface2 rounded-lg animate-pulse" />
+          ))}
+        </div>
       </div>
     )
   }
