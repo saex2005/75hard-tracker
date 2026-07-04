@@ -3,6 +3,7 @@ import localFont from 'next/font/local'
 import './globals.css'
 import BottomNav from '@/components/BottomNav'
 import NotificationPrompt from '@/components/NotificationPrompt'
+import OfflineBanner from '@/components/OfflineBanner'
 
 const geistSans = localFont({
   src: './fonts/GeistVF.woff',
@@ -50,6 +51,7 @@ export default function RootLayout({
           <div className="px-4 pt-2" style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}>
             <NotificationPrompt />
           </div>
+          <OfflineBanner />
           <main className="flex-1 pb-20">{children}</main>
           <BottomNav />
         </div>

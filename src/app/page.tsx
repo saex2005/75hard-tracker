@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase, type DayRecord, type ChallengeState } from '@/lib/supabase'
 import { calcDayNumber, todayISO, isPastDay } from '@/lib/utils'
+import { cacheDay, cacheChallengeState, getCachedDay, getCachedChallengeState, enqueue, getQueue, clearQueue } from '@/lib/offlineCache'
 import { CHALLENGE_CONFIG, BOTTLES_PER_DAY } from '@/config/challenge'
 import ProgressBar from '@/components/ProgressBar'
 import TaskCard from '@/components/TaskCard'
@@ -37,7 +38,14 @@ export default function HomePage() {
       .single()
 
     if (csError || !cs) {
-      setState({ status: 'error', message: csError?.message ?? 'Sin datos en challenge_state' })
+      const cachedDay = getCachedDay()
+      const cachedCs = getCachedChallengeState()
+      if (cachedDay && cachedCs) {
+        const dn = calcDayNumber(cachedCs.current_run_start)
+        setState({ status: 'active', day: cachedDay, challengeState: cachedCs, dayNumber: dn })
+      } else {
+        setState({ status: 'error', message: csError?.message ?? 'Sin datos en challenge_state' })
+      }
       return
     }
 
@@ -112,6 +120,8 @@ export default function HomePage() {
       return
     }
 
+    cacheDay(dayData)
+    cacheChallengeState(cs)
     setState({ status: 'active', day: dayData, challengeState: cs, dayNumber })
   }, [])
 
@@ -121,24 +131,36 @@ export default function HomePage() {
 
   async function updateDay(patch: Partial<DayRecord>) {
     if (state.status !== 'active') return
+    const prev = state.day
+    const optimistic = { ...prev, ...patch }
+    setState({ status: 'active', day: optimistic, challengeState: state.challengeState, dayNumber: state.dayNumber })
+    cacheDay(optimistic)
     setSaving(true)
-
-    const updated = { ...state.day, ...patch }
-    const { error } = await supabase
-      .from('days')
-      .update(patch)
-      .eq('id', state.day.id)
-
-    if (!error) {
-      setState({
-        status: 'active',
-        day: updated,
-        challengeState: state.challengeState,
-        dayNumber: state.dayNumber,
-      })
+    if (!navigator.onLine) {
+      enqueue({ dayId: prev.id, patch })
+      setSaving(false)
+      return
+    }
+    const { error } = await supabase.from('days').update(patch).eq('id', prev.id)
+    if (error) {
+      setState({ status: 'active', day: prev, challengeState: state.challengeState, dayNumber: state.dayNumber })
     }
     setSaving(false)
   }
+
+  useEffect(() => {
+    async function flushQueue() {
+      if (state.status !== 'active') return
+      const q = getQueue()
+      if (q.length === 0) return
+      for (const item of q) {
+        await supabase.from('days').update(item.patch).eq('id', item.dayId)
+      }
+      clearQueue()
+    }
+    window.addEventListener('online', flushQueue)
+    return () => window.removeEventListener('online', flushQueue)
+  }, [state])
 
   async function closeDay() {
     if (state.status !== 'active') return
@@ -316,14 +338,14 @@ export default function HomePage() {
                 gym_minutes: !day.gym_done ? 45 : 0,
               })
             }
-            disabled={saving || day.completed}
+            disabled={day.completed}
           >
             {day.gym_done && (
               <MinutePicker
                 minutes={day.gym_minutes}
                 onChange={(n) => updateDay({ gym_minutes: n })}
                 label="gym"
-                disabled={saving || day.completed}
+                disabled={day.completed}
               />
             )}
           </TaskCard>
@@ -339,14 +361,14 @@ export default function HomePage() {
                 cardio_minutes: !day.cardio_done ? 45 : 0,
               })
             }
-            disabled={saving || day.completed}
+            disabled={day.completed}
           >
             {day.cardio_done && (
               <MinutePicker
                 minutes={day.cardio_minutes}
                 onChange={(n) => updateDay({ cardio_minutes: n })}
                 label="cardio"
-                disabled={saving || day.completed}
+                disabled={day.completed}
               />
             )}
           </TaskCard>
@@ -356,12 +378,12 @@ export default function HomePage() {
             icon="💧"
             label="Agua — 1 galón"
             done={waterDone}
-            disabled={saving || day.completed}
+            disabled={day.completed}
           >
             <WaterCounter
               bottles={day.water_bottles}
               onChange={(n) => updateDay({ water_bottles: n })}
-              disabled={saving || day.completed}
+              disabled={day.completed}
             />
           </TaskCard>
 
@@ -371,7 +393,7 @@ export default function HomePage() {
             label="Dieta — sin cheat meals"
             done={day.diet_done}
             onToggle={() => updateDay({ diet_done: !day.diet_done })}
-            disabled={saving || day.completed}
+            disabled={day.completed}
           />
 
           {/* Lectura */}
@@ -387,7 +409,7 @@ export default function HomePage() {
                   : Math.max(0, (day.reading_page || 0) - 10),
               })
             }
-            disabled={saving || day.completed}
+            disabled={day.completed}
           >
             {day.reading_done && (
               <p className="text-xs text-[#A1A1AA] font-medium">
@@ -401,13 +423,13 @@ export default function HomePage() {
             icon="📸"
             label="Foto del día"
             done={!!day.photo_url}
-            disabled={saving || day.completed}
+            disabled={day.completed}
           >
             <PhotoUpload
               date={day.date}
               currentUrl={day.photo_url}
               onUploaded={(url) => updateDay({ photo_url: url })}
-              disabled={saving || day.completed}
+              disabled={day.completed}
             />
           </TaskCard>
         </div>

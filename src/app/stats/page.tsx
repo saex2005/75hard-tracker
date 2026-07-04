@@ -116,13 +116,26 @@ export default function StatsPage() {
 
       {/* Métricas principales */}
       <section
-        className="grid grid-cols-2 gap-2"
+        className="space-y-2"
         aria-label="Métricas del reto"
       >
-        <Metric label="Día actual" value={stats.dayNumber} unit="/ 75" />
-        <Metric label="Mejor racha" value={stats.challengeState.best_streak} unit="días" />
-        <Metric label="Completados" value={stats.completedDays} unit="días" accent />
-        <Metric label="Reintentos" value={stats.challengeState.total_restarts} />
+        <div className="grid grid-cols-2 gap-2">
+          <Metric label="Día actual" value={stats.dayNumber} unit="/ 75" />
+          <Metric label="Mejor racha" value={stats.challengeState.best_streak} unit="días" />
+          <Metric label="Completados" value={stats.completedDays} unit="días" accent />
+          <Metric label="Reintentos" value={stats.challengeState.total_restarts} />
+        </div>
+        {stats.dayNumber >= 1 && stats.dayNumber < 75 && (() => {
+          const daysLeft = 75 - stats.dayNumber
+          const end = new Date()
+          end.setDate(end.getDate() + daysLeft)
+          const dateStr = end.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })
+          return (
+            <p className="text-xs text-[#52525B] font-medium text-center pt-1">
+              A este ritmo terminás el <span className="text-[#A1A1AA]">{dateStr}</span>
+            </p>
+          )
+        })()}
       </section>
 
       {/* Completion por task */}
