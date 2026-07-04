@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
   }
 
   const d = today.day_number
-  const BOTTLES_GOAL = 8
+  const BOTTLES_GOAL = 4
   let sent = 0
 
   // --- KICKOFF 07:30 ARS ---
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
   // --- AGUA 11:00 ARS ---
   if (type === 'water') {
     const bottles = today.water_bottles
-    if (bottles >= 3) {
+    if (bottles >= 2) {
       return NextResponse.json({ sent: 0, reason: 'water on track' })
     }
     const falta = BOTTLES_GOAL - bottles

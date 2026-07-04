@@ -1,7 +1,7 @@
 export const CHALLENGE_CONFIG = {
   startDate: '2026-07-06',
   totalDays: 75,
-  bottleSizeMl: 500, // Santiago actualiza esto cuando mida su botella
+  bottleSizeMl: 1000,
   dailyWaterGoalL: 3.785, // 1 galón
   book: 'The Way of the Superior Man',
   dailyPagesGoal: 10,
