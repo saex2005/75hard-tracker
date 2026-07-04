@@ -193,33 +193,35 @@ export async function GET(request: NextRequest) {
 
   // --- CIERRE + RESET 21:05 ARS ---
   if (type === 'evening') {
-    // Reset si ayer no fue completado
     const yesterday = new Date(now)
     yesterday.setDate(yesterday.getDate() - 1)
     const yesterdayISO = yesterday.toISOString().split('T')[0]
 
-    const { data: yDay } = await supabase
-      .from('days')
-      .select('completed')
-      .eq('date', yesterdayISO)
+    const { data: cs } = await supabase
+      .from('challenge_state')
+      .select('*')
+      .eq('id', 1)
       .single()
 
     let reset = false
-    if (yDay && !yDay.completed) {
-      const { data: cs } = await supabase
-        .from('challenge_state')
-        .select('total_restarts')
-        .eq('id', 1)
+    // Solo resetear si el reto ya arrancó (current_run_start <= ayer)
+    if (cs && cs.current_run_start <= yesterdayISO) {
+      const { data: yDay } = await supabase
+        .from('days')
+        .select('completed')
+        .eq('date', yesterdayISO)
         .single()
 
-      await supabase
-        .from('challenge_state')
-        .update({
-          current_run_start: todayISO,
-          total_restarts: (cs?.total_restarts ?? 0) + 1,
-        })
-        .eq('id', 1)
-      reset = true
+      if (yDay && !yDay.completed) {
+        await supabase
+          .from('challenge_state')
+          .update({
+            current_run_start: todayISO,
+            total_restarts: (cs.total_restarts ?? 0) + 1,
+          })
+          .eq('id', 1)
+        reset = true
+      }
     }
 
     if (today.completed) {
