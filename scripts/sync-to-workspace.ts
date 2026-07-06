@@ -88,11 +88,12 @@ function tasks(d: Record<string, unknown>): string {
   const t = []
   if (d.gym_done) t.push('gym')
   if (d.cardio_done) t.push('cardio')
-  if (Number(d.water_bottles) >= 7) t.push('agua')
+  if (Number(d.water_bottles) >= 4) t.push('agua')
   if (d.diet_done) t.push('dieta')
+  if (d.insight_done) t.push('insightmkt')
   if (d.reading_done) t.push('lectura')
   if (d.photo_url) t.push('foto')
-  return `${t.length}/6 ${t.join(', ')}`
+  return `${t.length}/7 ${t.join(', ')}`
 }
 
 sync().catch(console.error)
