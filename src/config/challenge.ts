@@ -1,5 +1,5 @@
 export const CHALLENGE_CONFIG = {
-  startDate: '2026-07-06',
+  startDate: '2026-07-07',
   totalDays: 75,
   bottleSizeMl: 1000,
   dailyWaterGoalL: 3.785, // 1 galón
