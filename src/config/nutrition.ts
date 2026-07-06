@@ -66,6 +66,15 @@ export const MEALS = [
   },
 ]
 
+// Quick-add: las 4 comidas del plan con macros completos.
+// C y G distribuidos para que la suma cierre en DAILY_MACROS (2350/170/260/70).
+export const QUICK_MEALS = [
+  { meal: 'desayuno', label: 'Desayuno del plan', kcal: 650, protein: 35, carbs: 80, fat: 20 },
+  { meal: 'almuerzo', label: 'Almuerzo del plan', kcal: 700, protein: 52, carbs: 80, fat: 20 },
+  { meal: 'merienda', label: 'Merienda del plan', kcal: 450, protein: 30, carbs: 55, fat: 12 },
+  { meal: 'cena', label: 'Cena del plan', kcal: 550, protein: 53, carbs: 45, fat: 18 },
+] as const
+
 export type MealPrepSession = {
   day: string
   time: string

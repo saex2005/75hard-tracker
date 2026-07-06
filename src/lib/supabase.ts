@@ -43,6 +43,40 @@ export type ChallengeState = {
   best_streak: number
 }
 
+export type Food = {
+  id: string
+  source: 'off' | 'generic' | 'custom'
+  barcode: string | null
+  name: string
+  brand: string | null
+  kcal_100: number
+  protein_100: number
+  carbs_100: number
+  fat_100: number
+  fiber_100: number | null
+  serving_g: number | null
+  serving_name: string | null
+  source_ref: string | null
+  search_text: string | null
+  created_at: string
+}
+
+export type MealSlot = 'desayuno' | 'almuerzo' | 'merienda' | 'cena' | 'extra'
+
+export type FoodLog = {
+  id: string
+  date: string
+  meal: MealSlot
+  food_id: string | null
+  food_name: string
+  grams: number
+  kcal: number
+  protein: number
+  carbs: number
+  fat: number
+  created_at: string
+}
+
 // Esquema completo para Supabase (formato que espera el cliente)
 export type Database = {
   public: {
@@ -139,9 +173,82 @@ export type Database = {
         }
         Relationships: []
       }
+      foods: {
+        Row: Food
+        Insert: {
+          id?: string
+          source: 'off' | 'generic' | 'custom'
+          barcode?: string | null
+          name: string
+          brand?: string | null
+          kcal_100: number
+          protein_100: number
+          carbs_100: number
+          fat_100: number
+          fiber_100?: number | null
+          serving_g?: number | null
+          serving_name?: string | null
+          source_ref?: string | null
+          search_text?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          source?: 'off' | 'generic' | 'custom'
+          barcode?: string | null
+          name?: string
+          brand?: string | null
+          kcal_100?: number
+          protein_100?: number
+          carbs_100?: number
+          fat_100?: number
+          fiber_100?: number | null
+          serving_g?: number | null
+          serving_name?: string | null
+          source_ref?: string | null
+          search_text?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      food_logs: {
+        Row: FoodLog
+        Insert: {
+          id?: string
+          date: string
+          meal: MealSlot
+          food_id?: string | null
+          food_name: string
+          grams: number
+          kcal: number
+          protein: number
+          carbs: number
+          fat: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          date?: string
+          meal?: MealSlot
+          food_id?: string | null
+          food_name?: string
+          grams?: number
+          kcal?: number
+          protein?: number
+          carbs?: number
+          fat?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: { [_ in never]: never }
-    Functions: { [_ in never]: never }
+    Functions: {
+      search_foods: {
+        Args: { q: string }
+        Returns: Food[]
+      }
+    }
     Enums: { [_ in never]: never }
     CompositeTypes: { [_ in never]: never }
   }

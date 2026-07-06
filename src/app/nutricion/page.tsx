@@ -1,12 +1,17 @@
 'use client'
 
-import { useState } from 'react'
-import { DAILY_MACROS, MEALS, MEAL_PREP, SHOPPING_LIST, EMERGENCY_MEALS } from '@/config/nutrition'
-import { cn } from '@/lib/utils'
+import { useCallback, useEffect, useState } from 'react'
+import { DAILY_MACROS, MEALS, MEAL_PREP, SHOPPING_LIST, EMERGENCY_MEALS, QUICK_MEALS } from '@/config/nutrition'
+import { cn, todayISO } from '@/lib/utils'
+import type { FoodLog } from '@/lib/supabase'
+import MacroBars from '@/components/MacroBars'
+import FoodSearch, { type NewLogEntry } from '@/components/FoodSearch'
+import FoodLogList from '@/components/FoodLogList'
 
-type Tab = 'comidas' | 'mealprep' | 'compras' | 'emergencias'
+type Tab = 'registro' | 'comidas' | 'mealprep' | 'compras' | 'emergencias'
 
 const TABS: { id: Tab; label: string }[] = [
+  { id: 'registro', label: 'Registro' },
   { id: 'comidas', label: 'Comidas' },
   { id: 'mealprep', label: 'Meal Prep' },
   { id: 'compras', label: 'Compras' },
@@ -14,7 +19,7 @@ const TABS: { id: Tab; label: string }[] = [
 ]
 
 export default function NutricionPage() {
-  const [activeTab, setActiveTab] = useState<Tab>('comidas')
+  const [activeTab, setActiveTab] = useState<Tab>('registro')
 
   return (
     <main className="max-w-md mx-auto pb-4">
@@ -31,13 +36,13 @@ export default function NutricionPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-[#262626] px-4 mb-4">
+      <div className="flex border-b border-[#262626] px-4 mb-4 overflow-x-auto">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              'flex-1 pb-2 text-xs font-semibold tracking-wide transition-colors duration-150',
+              'flex-1 shrink-0 px-2 pb-2 text-xs font-semibold tracking-wide transition-colors duration-150 whitespace-nowrap',
               activeTab === tab.id
                 ? 'border-b-2 border-accent text-[#FAFAFA]'
                 : 'text-[#52525B]'
@@ -50,12 +55,156 @@ export default function NutricionPage() {
 
       {/* Contenido */}
       <div className="px-4 space-y-3">
+        {activeTab === 'registro' && <TabRegistro />}
         {activeTab === 'comidas' && <TabComidas />}
         {activeTab === 'mealprep' && <TabMealPrep />}
         {activeTab === 'compras' && <TabCompras />}
         {activeTab === 'emergencias' && <TabEmergencias />}
       </div>
     </main>
+  )
+}
+
+function TabRegistro() {
+  const [entries, setEntries] = useState<FoodLog[]>([])
+  const [loaded, setLoaded] = useState(false)
+  const date = todayISO()
+
+  useEffect(() => {
+    let cancelled = false
+    fetch(`/api/food-log?date=${date}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: FoodLog[]) => {
+        if (!cancelled) {
+          setEntries(data)
+          setLoaded(true)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setLoaded(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [date])
+
+  const totals = entries.reduce(
+    (acc, e) => ({
+      kcal: acc.kcal + e.kcal,
+      protein: acc.protein + e.protein,
+      carbs: acc.carbs + e.carbs,
+      fat: acc.fat + e.fat,
+    }),
+    { kcal: 0, protein: 0, carbs: 0, fat: 0 }
+  )
+
+  // UI optimista: agrega local con id temporal, revierte si la API falla
+  const addEntry = useCallback(
+    async (entry: NewLogEntry) => {
+      const tempId = `temp-${Date.now()}`
+      const optimistic: FoodLog = {
+        id: tempId,
+        date,
+        created_at: new Date().toISOString(),
+        ...entry,
+      }
+      setEntries((prev) => [...prev, optimistic])
+
+      try {
+        const res = await fetch('/api/food-log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date, ...entry }),
+        })
+        if (!res.ok) throw new Error()
+        const saved: FoodLog = await res.json()
+        setEntries((prev) => prev.map((e) => (e.id === tempId ? saved : e)))
+      } catch {
+        setEntries((prev) => prev.filter((e) => e.id !== tempId))
+      }
+    },
+    [date]
+  )
+
+  const deleteEntry = useCallback(async (id: string) => {
+    let removed: FoodLog | undefined
+    setEntries((prev) => {
+      removed = prev.find((e) => e.id === id)
+      return prev.filter((e) => e.id !== id)
+    })
+    if (id.startsWith('temp-')) return
+
+    try {
+      const res = await fetch(`/api/food-log?id=${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error()
+    } catch {
+      if (removed) setEntries((prev) => [...prev, removed!])
+    }
+  }, [])
+
+  // Quick-add: 1 tap registra la comida completa del plan (no duplica)
+  const quickAdd = useCallback(
+    (qm: (typeof QUICK_MEALS)[number]) => {
+      addEntry({
+        meal: qm.meal,
+        food_id: null,
+        food_name: qm.label,
+        grams: 1, // placeholder — la comida del plan no se mide en gramos
+        kcal: qm.kcal,
+        protein: qm.protein,
+        carbs: qm.carbs,
+        fat: qm.fat,
+      })
+    },
+    [addEntry]
+  )
+
+  return (
+    <div className="space-y-4 pb-4">
+      <MacroBars totals={totals} />
+
+      {/* Quick-add de las comidas del plan */}
+      <div>
+        <h3 className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#52525B] mb-2">
+          Comidas del plan
+        </h3>
+        <div className="grid grid-cols-2 gap-2">
+          {QUICK_MEALS.map((qm) => {
+            const done = entries.some((e) => e.meal === qm.meal && e.food_name === qm.label)
+            return (
+              <button
+                key={qm.meal}
+                onClick={() => !done && quickAdd(qm)}
+                disabled={done}
+                className={cn(
+                  'h-12 rounded-xl text-xs font-semibold border transition-transform active:scale-[0.98]',
+                  done
+                    ? 'border-green-500/30 bg-green-500/5 text-green-500'
+                    : 'border-[#262626] bg-[#141414] text-[#A1A1AA]'
+                )}
+              >
+                {qm.label.replace(' del plan', '')}
+                <span className="block text-[10px] font-mono tabular-nums text-[#52525B]">
+                  {done ? 'registrado' : `${qm.kcal} kcal · ${qm.protein}P`}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      <FoodSearch onAdd={addEntry} />
+
+      {loaded ? (
+        <FoodLogList entries={entries} onDelete={deleteEntry} />
+      ) : (
+        <div className="space-y-2">
+          {[0, 1].map((i) => (
+            <div key={i} className="h-14 bg-[#141414] border border-[#262626] rounded-xl animate-pulse" />
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
