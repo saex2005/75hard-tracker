@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 
   const { data: today } = await supabase
     .from('days')
-    .select('completed, day_number, gym_done, cardio_done, water_bottles, diet_done, reading_done, photo_url')
+    .select('completed, day_number, gym_done, cardio_done, water_bottles, diet_done, reading_done, photo_url, insight_done')
     .eq('date', todayISO)
     .single()
 
@@ -106,8 +106,8 @@ export async function GET(request: NextRequest) {
 
   // --- PROGRESO GENERAL 14:00 ARS ---
   if (type === 'progress') {
-    const done = [today.gym_done, today.cardio_done, today.diet_done, today.reading_done, !!today.photo_url].filter(Boolean).length
-    const pending = 5 - done
+    const done = [today.gym_done, today.cardio_done, today.diet_done, today.insight_done, today.reading_done, !!today.photo_url].filter(Boolean).length
+    const pending = 6 - done
     const water = today.water_bottles
 
     if (pending === 0 && water >= BOTTLES_GOAL) {
@@ -123,10 +123,24 @@ export async function GET(request: NextRequest) {
         `Ninguna task completada. El día no se va a completar solo.`,
       ])
     } else {
-      body = `${done}/5 tasks listas. Faltan ${pending}. Agua: ${water}/${BOTTLES_GOAL}. Vamos.`
+      body = `${done}/6 tasks listas. Faltan ${pending}. Agua: ${water}/${BOTTLES_GOAL}. Vamos.`
     }
 
     sent = await sendPush(subs, `Día ${d} — estado a las 14hs`, body)
+  }
+
+  // --- INSIGHTMKT 15:15 ARS ---
+  if (type === 'insight') {
+    if (today.insight_done) {
+      return NextResponse.json({ sent: 0, reason: 'insight done' })
+    }
+    const body = pick([
+      'Saliste de la fábrica. Ahora arrancan las 3 horas que te acercan al primer cliente.',
+      'Bloque InsightMkt: 15:15 a 17:45. El primer cliente no se consigue solo.',
+      '3 horas de InsightMkt pendientes. Esto también resetea el reto. Arrancá.',
+      'La fábrica paga las cuentas. Estas 3 horas construyen la salida. Dale.',
+    ])
+    sent = await sendPush(subs, '💼 InsightMkt — 3 hs', body)
   }
 
   // --- GYM + CARDIO 17:30 ARS ---
@@ -232,6 +246,7 @@ export async function GET(request: NextRequest) {
       !today.gym_done,
       !today.cardio_done,
       !today.diet_done,
+      !today.insight_done,
       !today.reading_done,
       !today.photo_url,
       today.water_bottles < BOTTLES_GOAL,

@@ -21,6 +21,7 @@ type Stats = {
     cardio: number
     water: number
     diet: number
+    insight: number
     reading: number
     photo: number
   }
@@ -54,6 +55,7 @@ export default function StatsPage() {
         cardio: pct(days.filter((d) => d.cardio_done).length, total),
         water: pct(days.filter((d) => d.water_bottles >= BOTTLES_PER_DAY).length, total),
         diet: pct(days.filter((d) => d.diet_done).length, total),
+        insight: pct(days.filter((d) => d.insight_done).length, total),
         reading: pct(days.filter((d) => d.reading_done).length, total),
         photo: pct(days.filter((d) => d.photo_url).length, total),
       }
@@ -104,6 +106,7 @@ export default function StatsPage() {
     { label: '🏃 Cardio', value: stats.taskCompletion.cardio },
     { label: '💧 Agua', value: stats.taskCompletion.water },
     { label: '🥗 Dieta', value: stats.taskCompletion.diet },
+    { label: '💼 InsightMkt', value: stats.taskCompletion.insight },
     { label: '📖 Lectura', value: stats.taskCompletion.reading },
     { label: '📸 Foto', value: stats.taskCompletion.photo },
   ]

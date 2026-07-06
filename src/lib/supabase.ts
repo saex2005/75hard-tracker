@@ -14,6 +14,8 @@ export type DayRecord = {
   reading_done: boolean
   reading_page: number
   photo_url: string | null
+  insight_done: boolean
+  insight_minutes: number
   completed: boolean
   created_at: string
 }
@@ -60,6 +62,8 @@ export type Database = {
           reading_done?: boolean
           reading_page?: number
           photo_url?: string | null
+          insight_done?: boolean
+          insight_minutes?: number
           completed?: boolean
           created_at?: string
         }
@@ -76,6 +80,8 @@ export type Database = {
           reading_done?: boolean
           reading_page?: number
           photo_url?: string | null
+          insight_done?: boolean
+          insight_minutes?: number
           completed?: boolean
           created_at?: string
         }

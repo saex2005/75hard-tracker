@@ -7,10 +7,10 @@ interface MinutePickerProps {
   onChange: (n: number) => void
   label: string
   disabled?: boolean
+  options?: number[]
 }
 
-export default function MinutePicker({ minutes, onChange, label, disabled }: MinutePickerProps) {
-  const options = [30, 45, 60, 75, 90]
+export default function MinutePicker({ minutes, onChange, label, disabled, options = [30, 45, 60, 75, 90] }: MinutePickerProps) {
 
   return (
     <div className="space-y-2">

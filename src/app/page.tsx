@@ -103,6 +103,8 @@ export default function HomePage() {
           reading_done: false,
           reading_page: 0,
           photo_url: null,
+          insight_done: false,
+          insight_minutes: 0,
           completed: false,
         })
         .select()
@@ -227,7 +229,7 @@ export default function HomePage() {
         </div>
         <div className="space-y-2">
           <div className="h-3 w-24 bg-surface2 rounded animate-pulse mb-3" />
-          {[...Array(6)].map((_, i) => (
+          {[...Array(7)].map((_, i) => (
             <div key={i} className="h-[60px] bg-surface border border-[#262626] rounded-xl animate-pulse" />
           ))}
         </div>
@@ -299,6 +301,7 @@ export default function HomePage() {
     waterDone &&
     day.diet_done &&
     day.reading_done &&
+    day.insight_done &&
     !!day.photo_url
 
   return (
@@ -395,6 +398,30 @@ export default function HomePage() {
             onToggle={() => updateDay({ diet_done: !day.diet_done })}
             disabled={day.completed}
           />
+
+          {/* InsightMkt */}
+          <TaskCard
+            icon="💼"
+            label="InsightMkt — 3 hs"
+            done={day.insight_done}
+            onToggle={() =>
+              updateDay({
+                insight_done: !day.insight_done,
+                insight_minutes: !day.insight_done ? 180 : 0,
+              })
+            }
+            disabled={day.completed}
+          >
+            {day.insight_done && (
+              <MinutePicker
+                minutes={day.insight_minutes}
+                onChange={(n) => updateDay({ insight_minutes: n })}
+                label="InsightMkt"
+                options={[120, 150, 180, 210, 240]}
+                disabled={day.completed}
+              />
+            )}
+          </TaskCard>
 
           {/* Lectura */}
           <TaskCard
