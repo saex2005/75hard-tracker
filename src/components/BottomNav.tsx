@@ -10,6 +10,7 @@ const links = [
   { href: '/fotos', label: 'Fotos', icon: CameraIcon },
   { href: '/stats', label: 'Stats', icon: ChartIcon },
   { href: '/peso', label: 'Peso', icon: ScaleIcon },
+  { href: '/nutricion', label: 'Dieta', icon: ForkKnifeIcon },
 ]
 
 export default function BottomNav() {
@@ -109,6 +110,20 @@ function ScaleIcon({ active }: { active: boolean }) {
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
         d="M12 3V5M12 5C10.3431 5 9 6.34315 9 8C9 9.65685 10.3431 11 12 11C13.6569 11 15 9.65685 15 8C15 6.34315 13.6569 5 12 5ZM5 21H19M8 21C8 21 7 17 5 15C4.5 14.5 4 13.5 4 12.5C4 11.1193 5.11929 10 6.5 10C7.88071 10 9 11.1193 9 12.5L8 21ZM16 21C16 21 17 17 19 15C19.5 14.5 20 13.5 20 12.5C20 11.1193 18.8807 10 17.5 10C16.1193 10 15 11.1193 15 12.5L16 21Z"
+        stroke="currentColor"
+        strokeWidth={active ? 2.5 : 1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function ForkKnifeIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M3 2v7c0 1.1.9 2 2 2h4v11M3 2h2v4M7 2h2v4M15 2c0 0 4 2 4 9H15M15 2v20"
         stroke="currentColor"
         strokeWidth={active ? 2.5 : 1.8}
         strokeLinecap="round"
