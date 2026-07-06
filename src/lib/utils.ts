@@ -29,6 +29,16 @@ export function todayISO(): string {
   return format(new Date(), 'yyyy-MM-dd')
 }
 
+// Fechas en hora argentina para server routes (Vercel corre en UTC).
+// Argentina es UTC-3 fijo, sin DST — el offset constante es correcto siempre.
+export function todayART(): string {
+  return new Date(Date.now() - 3 * 3600 * 1000).toISOString().split('T')[0]
+}
+
+export function yesterdayART(): string {
+  return new Date(Date.now() - 27 * 3600 * 1000).toISOString().split('T')[0]
+}
+
 export function isToday(dateStr: string): boolean {
   return dateStr === todayISO()
 }

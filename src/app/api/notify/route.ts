@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import webpush from 'web-push'
 import type { Database } from '@/lib/supabase'
+import { todayART, yesterdayART } from '@/lib/utils'
 
 webpush.setVapidDetails(
   process.env.VAPID_EMAIL!,
@@ -42,8 +43,9 @@ export async function GET(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  const now = new Date()
-  const todayISO = now.toISOString().split('T')[0]
+  // Fechas en hora argentina — Vercel corre en UTC y después de las 21:00 ARS
+  // el día UTC ya es el siguiente (bug que impedía el evening y rompía el reset)
+  const todayISO = todayART()
 
   const { data: today } = await supabase
     .from('days')
@@ -205,11 +207,45 @@ export async function GET(request: NextRequest) {
     sent = await sendPush(subs, '📖 📸 Últimos detalles', body)
   }
 
+  // --- MACROS 20:45 ARS ---
+  if (type === 'macros') {
+    const { data: logs } = await supabase
+      .from('food_logs')
+      .select('kcal, protein')
+      .eq('date', todayISO)
+
+    const KCAL_GOAL = 2350
+    const PROTEIN_GOAL = 170
+
+    let body: string
+    if (!logs || logs.length === 0) {
+      body = pick([
+        'No registraste ninguna comida hoy. Entrá a Dieta → Registro y cargá el día.',
+        'Cero comidas registradas. Los quick-add del plan son 1 tap — no hay excusa.',
+      ])
+    } else {
+      const kcal = Math.round(logs.reduce((a, l) => a + Number(l.kcal), 0))
+      const protein = Math.round(logs.reduce((a, l) => a + Number(l.protein), 0))
+      const kcalLeft = KCAL_GOAL - kcal
+      const proteinLeft = PROTEIN_GOAL - protein
+
+      if (kcalLeft < -100) {
+        body = `⚠️ Llevás ${kcal} kcal — te pasaste ${Math.abs(kcalLeft)} del objetivo. Cená liviano: proteína + verduras.`
+      } else if (proteinLeft > 30) {
+        body = `Llevás ${kcal}/${KCAL_GOAL} kcal pero solo ${protein}g de proteína. Te faltan ${proteinLeft}g — la cena tiene que ser proteica.`
+      } else if (kcalLeft > 100) {
+        body = `Vas bien: ${kcal}/${KCAL_GOAL} kcal, ${protein}g de proteína. Te quedan ${kcalLeft} kcal para la cena.`
+      } else {
+        body = `Día clavado: ${kcal}/${KCAL_GOAL} kcal y ${protein}g de proteína. Cerrá con la cena del plan y listo.`
+      }
+    }
+
+    sent = await sendPush(subs, '🥗 Macros del día', body)
+  }
+
   // --- CIERRE + RESET 21:05 ARS ---
   if (type === 'evening') {
-    const yesterday = new Date(now)
-    yesterday.setDate(yesterday.getDate() - 1)
-    const yesterdayISO = yesterday.toISOString().split('T')[0]
+    const yesterdayISO = yesterdayART()
 
     const { data: cs } = await supabase
       .from('challenge_state')

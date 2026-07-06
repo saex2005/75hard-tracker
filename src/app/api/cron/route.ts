@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase'
+import { todayART, yesterdayART } from '@/lib/utils'
 
-// Vercel cron: 5 0 * * * (00:05 UTC = 21:05 ARS)
+// Vercel cron: 5 6 * * * (06:05 UTC = 03:05 ARS — el día anterior ya cerró seguro)
 // Resetea el reto si el día anterior no fue completado,
 // pero solo si el reto ya arrancó (current_run_start <= ayer)
 
@@ -25,10 +26,8 @@ export async function GET(request: Request) {
 
   if (!cs) return NextResponse.json({ reset: false, reason: 'no challenge state' })
 
-  const todayISO = new Date().toISOString().split('T')[0]
-  const yesterday = new Date()
-  yesterday.setDate(yesterday.getDate() - 1)
-  const yesterdayISO = yesterday.toISOString().split('T')[0]
+  const todayISO = todayART()
+  const yesterdayISO = yesterdayART()
 
   // Si el reto todavía no arrancó, no hacer nada
   if (cs.current_run_start > yesterdayISO) {

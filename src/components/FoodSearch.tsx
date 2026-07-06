@@ -40,6 +40,7 @@ function round1(n: number): number {
 export default function FoodSearch({ onAdd }: { onAdd: (entry: NewLogEntry) => void }) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Food[]>([])
+  const [recents, setRecents] = useState<Food[]>([])
   const [searching, setSearching] = useState(false)
   const [searched, setSearched] = useState(false)
   const [selected, setSelected] = useState<Food | null>(null)
@@ -47,6 +48,20 @@ export default function FoodSearch({ onAdd }: { onAdd: (entry: NewLogEntry) => v
   const [meal, setMeal] = useState<MealSlot>(defaultMealByHour())
   const [showCreate, setShowCreate] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
+
+  // Alimentos más usados (últimos 30 días) — atajo antes de tipear
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/foods/recent')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: Food[]) => {
+        if (!cancelled && Array.isArray(data)) setRecents(data)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // Búsqueda con debounce de 300ms
   useEffect(() => {
@@ -122,6 +137,34 @@ export default function FoodSearch({ onAdd }: { onAdd: (entry: NewLogEntry) => v
         placeholder="Buscar alimento o marca…"
         className="w-full h-12 px-4 bg-[#1C1C1C] border border-[#262626] rounded-xl text-sm font-medium placeholder:text-[#52525B] focus:outline-none focus:border-[#3F3F46]"
       />
+
+      {/* Recientes — visibles solo sin búsqueda activa */}
+      {!selected && query.trim().length < 2 && recents.length > 0 && (
+        <div>
+          <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#52525B] mb-2">
+            Recientes
+          </p>
+          <div className="space-y-1.5">
+            {recents.map((food) => (
+              <button
+                key={food.id}
+                onClick={() => selectFood(food)}
+                className="w-full bg-[#141414] border border-[#262626] rounded-xl px-3 py-2.5 flex items-center gap-3 text-left active:scale-[0.98] transition-transform"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate">{food.name}</p>
+                  {food.brand && (
+                    <p className="text-xs text-[#52525B] font-medium truncate">{food.brand}</p>
+                  )}
+                </div>
+                <p className="text-xs font-mono tabular-nums text-[#52525B] shrink-0">
+                  {Math.round(food.kcal_100)} kcal · {food.protein_100}P
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Skeleton mientras busca */}
       {searching && !selected && (
