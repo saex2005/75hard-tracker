@@ -11,10 +11,13 @@ const links = [
   { href: '/stats', label: 'Stats', icon: ChartIcon },
   { href: '/peso', label: 'Peso', icon: ScaleIcon },
   { href: '/nutricion', label: 'Dieta', icon: ForkKnifeIcon },
+  { href: '/asistente', label: 'Chat', icon: ChatIcon },
 ]
 
 export default function BottomNav() {
   const pathname = usePathname()
+
+  if (pathname === '/login') return null
 
   return (
     <nav
@@ -110,6 +113,20 @@ function ScaleIcon({ active }: { active: boolean }) {
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
         d="M12 3V5M12 5C10.3431 5 9 6.34315 9 8C9 9.65685 10.3431 11 12 11C13.6569 11 15 9.65685 15 8C15 6.34315 13.6569 5 12 5ZM5 21H19M8 21C8 21 7 17 5 15C4.5 14.5 4 13.5 4 12.5C4 11.1193 5.11929 10 6.5 10C7.88071 10 9 11.1193 9 12.5L8 21ZM16 21C16 21 17 17 19 15C19.5 14.5 20 13.5 20 12.5C20 11.1193 18.8807 10 17.5 10C16.1193 10 15 11.1193 15 12.5L16 21Z"
+        stroke="currentColor"
+        strokeWidth={active ? 2.5 : 1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function ChatIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M8 10H8.01M12 10H12.01M16 10H16.01M21 12C21 16.4183 16.9706 20 12 20C10.4607 20 9.01172 19.6565 7.74467 19.0511L3 20L4.39499 16.28C3.51156 15.0423 3 13.5743 3 12C3 7.58172 7.02944 4 12 4C16.9706 4 21 7.58172 21 12Z"
         stroke="currentColor"
         strokeWidth={active ? 2.5 : 1.8}
         strokeLinecap="round"
