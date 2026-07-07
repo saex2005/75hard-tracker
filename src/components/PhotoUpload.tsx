@@ -90,11 +90,11 @@ export default function PhotoUpload({ date, currentUrl, onUploaded, disabled }: 
         </button>
       )}
 
+      {/* Sin `capture`: el picker nativo ofrece cámara O galería */}
       <input
         ref={inputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         className="sr-only"
         aria-label="Seleccionar foto"
         onChange={(e) => {
