@@ -46,7 +46,7 @@ const TOOLS: Anthropic.Tool[] = [
   {
     name: 'guardar_memoria',
     description:
-      'Guardar un hecho útil y duradero sobre Santiago para futuras conversaciones (preferencias, qué le funciona, contexto personal del reto). No usar para datos del día ni para cosas ya presentes en el contexto.',
+      'Guardar un hecho útil y duradero sobre Santiago para futuras conversaciones (preferencias, qué le funciona, contexto personal del reto). LLAMALA SIEMPRE que Santiago diga "acordate", "anotá", "guardá" o pida explícitamente recordar algo — sin esta llamada el dato se pierde. También usala por iniciativa propia ante hechos duraderos. No usar para datos del día ni para cosas ya presentes en el contexto.',
     input_schema: {
       type: 'object',
       properties: { texto: { type: 'string', description: 'El hecho, en una oración concreta' } },
