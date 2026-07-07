@@ -184,6 +184,146 @@ export const SHOPPING_LIST = [
   },
 ]
 
+// Recetas: cómo combinar lo ya cocinado en el batch.
+// Todo cumple las reglas binarias: sin azúcar, aceite solo en crudo, nada ambiguo.
+export type Recipe = {
+  name: string
+  meal: string
+  time: string
+  batch: string[]
+  extras: string[]
+  steps: string[]
+}
+
+export const RECIPES: Recipe[] = [
+  {
+    name: 'Bowl criollo',
+    meal: 'Almuerzo',
+    time: '5 min',
+    batch: ['200 g de pollo', '250 g de arroz', '150 g de verduras asadas'],
+    extras: ['Tomate y cebolla crudos picados', 'Vinagre', '10 g de aceite (el de la comida)'],
+    steps: [
+      'Picar tomate y cebolla, mezclar con vinagre y una pizca de sal → salsa criolla',
+      'Armar el bowl: arroz abajo, pollo y verduras arriba',
+      'Salsa criolla y aceite en crudo recién al momento de comer',
+    ],
+  },
+  {
+    name: 'Bowl limón y orégano',
+    meal: 'Almuerzo',
+    time: '5 min',
+    batch: ['200 g de pollo desmenuzado', '250 g de arroz', '150 g de verduras asadas'],
+    extras: ['Jugo de ½ limón', 'Orégano y pimienta', '10 g de aceite'],
+    steps: [
+      'Desmenuzar el pollo frío con las manos o dos tenedores',
+      'Mezclar todo en el tupper',
+      'Limón, orégano y aceite al comer — va bien frío si no hay microondas',
+    ],
+  },
+  {
+    name: 'Ensalada de atún y papa',
+    meal: 'Almuerzo o cena',
+    time: '5 min',
+    batch: ['2 latas de atún (160 g)', '250 g de papa en cubos', '1 huevo duro de backup'],
+    extras: ['Tomate', 'Vinagre y pimienta', '10 g de aceite'],
+    steps: [
+      'Cortar la papa fría en cubos, sumar el atún escurrido y el tomate',
+      'Huevo duro en cuartos arriba (suma ~6 g de proteína extra)',
+      'Vinagre, pimienta y aceite en crudo al servir',
+    ],
+  },
+  {
+    name: 'Pollo a la mostaza',
+    meal: 'Almuerzo o cena',
+    time: '5 min',
+    batch: ['200 g de pollo', '200-250 g de papa', '150 g de verduras asadas'],
+    extras: ['1 cda de mostaza (sin miel) + 1 cda de agua', 'Pimentón', '10 g de aceite'],
+    steps: [
+      'Mezclar mostaza, agua y pimentón → salsa liviana',
+      'Calentar pollo, papa y verduras en microondas',
+      'Salsa por arriba y aceite en crudo al final',
+    ],
+  },
+  {
+    name: 'Arroz salteado',
+    meal: 'Cena',
+    time: '10 min',
+    batch: ['250 g de arroz', '200 g de pollo', '150 g de verduras picadas', '1 huevo duro picado'],
+    extras: ['Ajo en polvo, jengibre (si hay) y pimienta', '10 g de aceite'],
+    steps: [
+      'Sartén antiadherente sin aceite: verduras 2 min a fuego fuerte',
+      'Sumar pollo y arroz hasta que tome calor y un poco de dorado',
+      'Apagar, mezclar el huevo picado y las especias, aceite en crudo al servir',
+    ],
+  },
+  {
+    name: 'Merluza al limón con puré',
+    meal: 'Cena',
+    time: '10 min',
+    batch: ['200 g de merluza', '200 g de papa'],
+    extras: ['Limón', 'Ajo y perejil (provenzal)', 'Ensalada de hojas + tomate', '10 g de aceite'],
+    steps: [
+      'Pisar la papa caliente con el aceite en crudo → puré',
+      'Calentar la merluza con provenzal (microondas o sartén sin aceite)',
+      'Limón por arriba y ensalada de ½ plato al lado',
+    ],
+  },
+  {
+    name: 'Carne al chimichurri',
+    meal: 'Cena',
+    time: '10 min',
+    batch: ['200 g de nalga o cuadrada', '200 g de papa o batata'],
+    extras: ['Chimichurri seco (orégano, ají molido, ajo en polvo, perejil)', 'Vinagre', 'Ensalada', '10 g de aceite'],
+    steps: [
+      'Hidratar el chimichurri 5 min en vinagre + el aceite de la comida',
+      'Calentar carne y papa',
+      'Chimichurri por arriba, ensalada de ½ plato',
+    ],
+  },
+  {
+    name: 'Wok especiado',
+    meal: 'Cena',
+    time: '10 min',
+    batch: ['200 g de pollo o carne', '200 g de verduras asadas', '250 g de arroz o 200 g de papa'],
+    extras: ['Curry o comino + pimentón ahumado', '10 g de aceite'],
+    steps: [
+      'Sartén antiadherente sin aceite, todo junto a fuego fuerte 5 min',
+      'Especias al final para que no se quemen',
+      'Aceite en crudo al servir',
+    ],
+  },
+  {
+    name: 'Ensalada tibia de batata y atún',
+    meal: 'Cena',
+    time: '5 min',
+    batch: ['200 g de batata', '2 latas de atún (160 g)'],
+    extras: ['Hojas verdes + tomate', 'Mostaza (sin miel) + vinagre', '10 g de aceite'],
+    steps: [
+      'Calentar la batata en cubos, el resto va frío',
+      'Mezclar mostaza + vinagre + aceite → vinagreta',
+      'Todo al bowl, vinagreta por arriba',
+    ],
+  },
+]
+
+export const SEASONINGS = [
+  { name: 'Salsa criolla', pair: 'Pollo · carne · atún', how: 'Tomate y cebolla picados + vinagre + el aceite de la comida' },
+  { name: 'Chimichurri', pair: 'Carne · pollo', how: 'Orégano + ají molido + ajo en polvo + perejil, hidratado en vinagre y el aceite' },
+  { name: 'Limón y pimienta', pair: 'Merluza · atún · pollo', how: 'Jugo de limón + pimienta negra' },
+  { name: 'Mostaza aligerada', pair: 'Pollo · carne', how: '1 cda de mostaza (sin miel) + 1 cda de agua + pimentón' },
+  { name: 'Provenzal', pair: 'Merluza · papa', how: 'Ajo picado o en polvo + perejil' },
+  { name: 'Especiado seco', pair: 'Wok · verduras', how: 'Curry o comino + pimentón ahumado' },
+  { name: 'Vinagreta', pair: 'Ensaladas', how: 'Vinagre o aceto (etiqueta sin azúcar) + el aceite en crudo' },
+]
+
+export const RECIPE_RULES = [
+  'El aceite de cada comida (10 g) va siempre en crudo al servir — nunca a la sartén',
+  'Condimentos secos, limón y vinagre son libres: no suman macros',
+  'Recalentar en microondas o sartén antiadherente sin aceite',
+  'El condimento seco viaja en el tupper; salsa y aceite se agregan al comer para que no se empape',
+  'Aderezo con azúcar en la etiqueta = no entra (regla 8)',
+]
+
 export const EMERGENCY_MEALS = [
   {
     name: 'Atún + arroz + huevo duro',

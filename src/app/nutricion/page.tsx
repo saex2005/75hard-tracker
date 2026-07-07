@@ -1,19 +1,20 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { DAILY_MACROS, MEALS, MEAL_PREP, SHOPPING_LIST, EMERGENCY_MEALS, QUICK_MEALS } from '@/config/nutrition'
+import { DAILY_MACROS, MEALS, MEAL_PREP, SHOPPING_LIST, EMERGENCY_MEALS, QUICK_MEALS, RECIPES, SEASONINGS, RECIPE_RULES } from '@/config/nutrition'
 import { cn, todayISO } from '@/lib/utils'
 import type { FoodLog } from '@/lib/supabase'
 import MacroBars from '@/components/MacroBars'
 import FoodSearch, { type NewLogEntry } from '@/components/FoodSearch'
 import FoodLogList from '@/components/FoodLogList'
 
-type Tab = 'registro' | 'comidas' | 'mealprep' | 'compras' | 'emergencias'
+type Tab = 'registro' | 'comidas' | 'mealprep' | 'recetas' | 'compras' | 'emergencias'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'registro', label: 'Registro' },
   { id: 'comidas', label: 'Comidas' },
   { id: 'mealprep', label: 'Meal Prep' },
+  { id: 'recetas', label: 'Recetas' },
   { id: 'compras', label: 'Compras' },
   { id: 'emergencias', label: 'Emergencias' },
 ]
@@ -58,6 +59,7 @@ export default function NutricionPage() {
         {activeTab === 'registro' && <TabRegistro />}
         {activeTab === 'comidas' && <TabComidas />}
         {activeTab === 'mealprep' && <TabMealPrep />}
+        {activeTab === 'recetas' && <TabRecetas />}
         {activeTab === 'compras' && <TabCompras />}
         {activeTab === 'emergencias' && <TabEmergencias />}
       </div>
@@ -316,6 +318,91 @@ function TabMealPrep() {
           </ul>
         </div>
       ))}
+    </div>
+  )
+}
+
+function TabRecetas() {
+  return (
+    <div className="space-y-4 pb-4">
+      <p className="text-xs text-[#52525B] font-medium">
+        Combinaciones de lo que ya está cocinado en el batch. Armado en 5-10 min.
+      </p>
+
+      {RECIPES.map((recipe) => (
+        <div key={recipe.name} className="bg-[#141414] border border-[#262626] rounded-xl p-4">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-3">
+            <p className="text-base font-bold">{recipe.name}</p>
+            <div className="text-right shrink-0 ml-3">
+              <p className="text-xs text-accent font-semibold">{recipe.meal}</p>
+              <p className="text-[11px] font-mono text-[#52525B]">{recipe.time}</p>
+            </div>
+          </div>
+
+          {/* Del batch */}
+          <SectionHeader>Del batch</SectionHeader>
+          <ul className="space-y-1 mb-3">
+            {recipe.batch.map((item, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <span className="text-[#3F3F46] mt-1 shrink-0">—</span>
+                <span className="text-sm text-[#A1A1AA] font-medium">{item}</span>
+              </li>
+            ))}
+          </ul>
+
+          {/* Frescos / condimentos */}
+          <SectionHeader>Frescos y condimentos</SectionHeader>
+          <ul className="space-y-1 mb-3">
+            {recipe.extras.map((item, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <span className="text-[#3F3F46] mt-1 shrink-0">—</span>
+                <span className="text-sm text-[#A1A1AA] font-medium">{item}</span>
+              </li>
+            ))}
+          </ul>
+
+          {/* Armado */}
+          <SectionHeader>Armado</SectionHeader>
+          <ol className="space-y-1.5">
+            {recipe.steps.map((step, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <span className="text-xs font-black text-accent tabular-nums mt-0.5 shrink-0 w-4">{i + 1}.</span>
+                <span className="text-sm text-[#A1A1AA] font-medium">{step}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      ))}
+
+      {/* Banco de condimentos */}
+      <div className="bg-[#141414] border border-[#262626] rounded-xl p-4">
+        <SectionHeader>Banco de condimentos</SectionHeader>
+        <div className="space-y-2.5">
+          {SEASONINGS.map((s) => (
+            <div key={s.name} className="py-1.5 border-b border-[#1C1C1C] last:border-0">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-bold text-[#FAFAFA]">{s.name}</p>
+                <p className="text-[11px] text-accent font-medium shrink-0">{s.pair}</p>
+              </div>
+              <p className="text-xs text-[#52525B] font-medium mt-0.5">{s.how}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Reglas de armado */}
+      <div className="bg-[#141414] border border-[#262626] rounded-xl p-4">
+        <SectionHeader>Reglas de armado</SectionHeader>
+        <ul className="space-y-1.5">
+          {RECIPE_RULES.map((rule, i) => (
+            <li key={i} className="flex items-start gap-2">
+              <span className="text-accent mt-0.5 shrink-0 text-xs">›</span>
+              <span className="text-sm text-[#A1A1AA] font-medium">{rule}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   )
 }
