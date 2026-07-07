@@ -195,7 +195,9 @@ export default function AsistentePage() {
           onChange={(e) => setInput(e.target.value)}
           placeholder="Escribí acá…"
           enterKeyHint="send"
-          className="flex-1 h-11 rounded-xl bg-[#141414] border border-[#262626] px-4 text-sm text-[#FAFAFA] placeholder-[#3F3F46] outline-none focus:border-accent transition-colors"
+          // Al cerrar el teclado, iOS a veces deja la página corrida — reacomodar
+          onBlur={() => setTimeout(() => window.scrollTo(0, 0), 50)}
+          className="flex-1 h-11 rounded-xl bg-[#141414] border border-[#262626] px-4 text-base text-[#FAFAFA] placeholder-[#3F3F46] outline-none focus:border-accent transition-colors"
         />
         <button
           type="submit"

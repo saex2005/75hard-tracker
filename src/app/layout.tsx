@@ -31,7 +31,13 @@ export const viewport: Viewport = {
   themeColor: '#0A0A0A',
   width: 'device-width',
   initialScale: 1,
+  // Sin esto iOS hace zoom automático al enfocar inputs con fuente <16px
+  // y la página queda "deformada" hasta acomodarla a mano
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: 'cover',
+  // Android: que el teclado achique el contenido en vez de taparlo
+  interactiveWidget: 'resizes-content',
 }
 
 export default function RootLayout({
