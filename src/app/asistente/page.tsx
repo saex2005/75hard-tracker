@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 
-type ChatMessage = { role: 'user' | 'assistant'; content: string }
+type ChatMessage = { role: 'user' | 'assistant'; content: string; created_at?: string }
 
-const STORAGE_KEY = 'hard75-chat-history'
-const MAX_STORED = 40
+// "Nueva charla" no borra nada del server (memoria constante) — solo oculta
+// los mensajes anteriores a este cutoff en la vista de este dispositivo.
+const CUTOFF_KEY = 'hard75-chat-cutoff'
 
 const SUGGESTIONS = [
   '¿Qué me falta hoy?',
@@ -24,20 +25,27 @@ export default function AsistentePage() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
 
+  // Historial desde el server — misma conversación en todos los dispositivos
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY)
-      if (saved) setMessages(JSON.parse(saved))
-    } catch {}
-    setLoaded(true)
+    let cancelled = false
+    fetch('/api/chat')
+      .then((res) => (res.ok ? res.json() : { messages: [] }))
+      .then((data: { messages: ChatMessage[] }) => {
+        if (cancelled) return
+        const cutoff = localStorage.getItem(CUTOFF_KEY)
+        const visible = cutoff
+          ? data.messages.filter((m) => m.created_at && m.created_at > cutoff)
+          : data.messages
+        setMessages(visible)
+        setLoaded(true)
+      })
+      .catch(() => {
+        if (!cancelled) setLoaded(true)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [])
-
-  useEffect(() => {
-    if (!loaded) return
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-MAX_STORED)))
-    } catch {}
-  }, [messages, loaded])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -49,9 +57,7 @@ export default function AsistentePage() {
       if (!content || streaming) return
       setError(null)
       setInput('')
-
-      const history = [...messages, { role: 'user' as const, content }]
-      setMessages(history)
+      setMessages((prev) => [...prev, { role: 'user', content }])
       setStreaming(true)
 
       const controller = new AbortController()
@@ -61,7 +67,7 @@ export default function AsistentePage() {
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: history }),
+          body: JSON.stringify({ message: content }),
           signal: controller.signal,
         })
         if (!res.ok || !res.body) {
@@ -88,7 +94,6 @@ export default function AsistentePage() {
       } catch (err) {
         if (!(err instanceof DOMException && err.name === 'AbortError')) {
           setError(err instanceof Error ? err.message : 'Error de conexión')
-          // Si no llegó nada del asistente, saco el mensaje vacío
           setMessages((prev) =>
             prev.length && prev[prev.length - 1].role === 'assistant' && !prev[prev.length - 1].content
               ? prev.slice(0, -1)
@@ -100,15 +105,15 @@ export default function AsistentePage() {
         abortRef.current = null
       }
     },
-    [messages, streaming]
+    [streaming]
   )
 
-  function clearChat() {
+  function newChat() {
     abortRef.current?.abort()
     setMessages([])
     setError(null)
     try {
-      localStorage.removeItem(STORAGE_KEY)
+      localStorage.setItem(CUTOFF_KEY, new Date().toISOString())
     } catch {}
   }
 
@@ -118,14 +123,14 @@ export default function AsistentePage() {
       <div className="flex items-center justify-between px-4 pt-6 pb-3 shrink-0">
         <div>
           <h1 className="text-3xl font-black tracking-tight">Asistente</h1>
-          <p className="text-xs text-[#52525B] font-medium">Conoce tu reto y tu día en tiempo real</p>
+          <p className="text-xs text-[#52525B] font-medium">Se acuerda de todo lo que hablaron</p>
         </div>
         {messages.length > 0 && (
           <button
-            onClick={clearChat}
+            onClick={newChat}
             className="text-[11px] font-bold tracking-wide uppercase text-[#52525B] border border-[#262626] rounded-lg px-3 py-2 active:scale-[0.98]"
           >
-            Limpiar
+            Nueva charla
           </button>
         )}
       </div>
@@ -135,7 +140,7 @@ export default function AsistentePage() {
         {messages.length === 0 && loaded && (
           <div className="pt-8 space-y-2">
             <p className="text-sm text-[#52525B] font-medium text-center mb-4">
-              Preguntale lo que sea del reto — tiene tu estado del día.
+              Preguntale lo que sea del reto — tiene tu estado del día y recuerda las charlas anteriores.
             </p>
             {SUGGESTIONS.map((s) => (
               <button

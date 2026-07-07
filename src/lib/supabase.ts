@@ -67,6 +67,13 @@ export type AssistantMemory = {
   created_at: string
 }
 
+export type ChatMessageRow = {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  created_at: string
+}
+
 export type MealSlot = 'desayuno' | 'almuerzo' | 'merienda' | 'cena' | 'extra'
 
 export type FoodLog = {
@@ -213,6 +220,22 @@ export type Database = {
           serving_name?: string | null
           source_ref?: string | null
           search_text?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: ChatMessageRow
+        Insert: {
+          id?: string
+          role: 'user' | 'assistant'
+          content: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          role?: 'user' | 'assistant'
+          content?: string
           created_at?: string
         }
         Relationships: []

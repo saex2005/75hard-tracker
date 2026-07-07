@@ -10,10 +10,9 @@ import { DAILY_MACROS } from '@/config/nutrition'
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
-const MAX_HISTORY = 20
+const CONTEXT_MESSAGES = 30 // últimos mensajes de la DB que entran como contexto
+const UI_MESSAGES = 50 // mensajes que devuelve el GET para renderizar
 const MAX_TOOL_ROUNDS = 6
-
-type ChatMessage = { role: 'user' | 'assistant'; content: string }
 
 // ---------- Herramientas de lectura (Supabase) + memoria persistente ----------
 
@@ -41,6 +40,16 @@ const TOOLS: Anthropic.Tool[] = [
       type: 'object',
       properties: { fecha: { type: 'string', description: 'Fecha en formato YYYY-MM-DD' } },
       required: ['fecha'],
+    },
+  },
+  {
+    name: 'buscar_conversaciones',
+    description:
+      'Buscar en TODO el historial de conversaciones con Santiago (más allá de los últimos mensajes que ya tenés en contexto). Usar cuando pregunte por algo que hablaron antes y no esté a la vista.',
+    input_schema: {
+      type: 'object',
+      properties: { query: { type: 'string', description: 'Palabra o frase a buscar en los mensajes' } },
+      required: ['query'],
     },
   },
   {
@@ -112,6 +121,23 @@ async function runTool(name: string, input: Record<string, unknown>): Promise<st
           { kcal: 0, p: 0, c: 0, g: 0 }
         )
         return JSON.stringify({ fecha, comidas: logs, totales: totals })
+      }
+      case 'buscar_conversaciones': {
+        const query = String(input.query ?? '').trim()
+        if (!query) return 'Error: query vacía'
+        const { data, error } = await supabase
+          .from('chat_messages')
+          .select('role, content, created_at')
+          .ilike('content', `%${query.replace(/[%_]/g, '\\$&')}%`)
+          .order('created_at', { ascending: false })
+          .limit(20)
+        if (error) throw error
+        const rows = (data ?? []).map((m) => ({
+          fecha: m.created_at.slice(0, 16).replace('T', ' '),
+          quien: m.role === 'user' ? 'santiago' : 'vos',
+          texto: m.content.length > 300 ? m.content.slice(0, 300) + '…' : m.content,
+        }))
+        return rows.length ? JSON.stringify(rows) : `Sin resultados para "${query}"`
       }
       case 'guardar_memoria': {
         const texto = String(input.texto ?? '').trim()
@@ -201,7 +227,24 @@ Tus memorias guardadas:
 ${memoriesBlock}`
 }
 
-// ---------- Endpoint ----------
+// ---------- Endpoints ----------
+
+// GET: historial para renderizar en la UI (memoria constante entre dispositivos)
+export async function GET(req: NextRequest) {
+  if (!(await isValidToken(req.cookies.get(AUTH_COOKIE)?.value))) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  }
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .select('role, content, created_at')
+    .order('created_at', { ascending: false })
+    .limit(UI_MESSAGES)
+  if (error) {
+    // Tabla inexistente u otro problema: la UI arranca vacía, el chat sigue andando
+    return NextResponse.json({ messages: [] })
+  }
+  return NextResponse.json({ messages: (data ?? []).reverse() })
+}
 
 export async function POST(req: NextRequest) {
   if (!(await isValidToken(req.cookies.get(AUTH_COOKIE)?.value))) {
@@ -213,18 +256,38 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Falta la API key de Anthropic en el server' }, { status: 500 })
   }
 
-  let messages: ChatMessage[]
+  // Acepta { message } (cliente nuevo) o { messages: [...] } (cliente viejo cacheado por la PWA)
+  let userMessage = ''
   try {
     const body = await req.json()
-    messages = body.messages
-    if (!Array.isArray(messages) || messages.length === 0) throw new Error()
-    messages = messages
-      .filter((m) => (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim())
-      .slice(-MAX_HISTORY)
-    if (messages.length === 0 || messages[messages.length - 1].role !== 'user') throw new Error()
+    if (typeof body.message === 'string') {
+      userMessage = body.message.trim()
+    } else if (Array.isArray(body.messages)) {
+      const last = body.messages[body.messages.length - 1]
+      if (last?.role === 'user' && typeof last.content === 'string') userMessage = last.content.trim()
+    }
+    if (!userMessage) throw new Error()
   } catch {
     return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
   }
+
+  // Contexto: últimos mensajes desde la DB (memoria constante) + el mensaje nuevo.
+  // Si la tabla no existe, sigue con historial vacío.
+  const historyRes = await supabase
+    .from('chat_messages')
+    .select('role, content')
+    .order('created_at', { ascending: false })
+    .limit(CONTEXT_MESSAGES)
+  const history = (historyRes.data ?? []).reverse()
+  while (history.length && history[0].role !== 'user') history.shift() // el primer mensaje debe ser user
+
+  const messages: Anthropic.MessageParam[] = [
+    ...history.map((m) => ({ role: m.role, content: m.content })),
+    { role: 'user' as const, content: userMessage },
+  ]
+
+  // Log del mensaje del usuario (best-effort: un fallo acá no corta el chat)
+  supabase.from('chat_messages').insert({ role: 'user', content: userMessage }).then(() => {})
 
   let liveState = ''
   try {
@@ -241,6 +304,7 @@ export async function POST(req: NextRequest) {
       try {
         // Loop agéntico: streamea texto al cliente y resuelve tool calls entre rondas
         const turn: Anthropic.MessageParam[] = [...messages]
+        let assistantText = ''
         for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
           const stream = client.messages.stream({
             model: 'claude-sonnet-5',
@@ -257,7 +321,10 @@ export async function POST(req: NextRequest) {
             messages: turn,
           })
 
-          stream.on('text', (delta) => controller.enqueue(encoder.encode(delta)))
+          stream.on('text', (delta) => {
+            assistantText += delta
+            controller.enqueue(encoder.encode(delta))
+          })
           const final = await stream.finalMessage()
 
           if (final.stop_reason !== 'tool_use') break
@@ -275,6 +342,10 @@ export async function POST(req: NextRequest) {
             }))
           )
           turn.push({ role: 'user', content: results })
+        }
+        // Log de la respuesta completa (best-effort)
+        if (assistantText.trim()) {
+          await supabase.from('chat_messages').insert({ role: 'assistant', content: assistantText })
         }
         controller.close()
       } catch (err) {
