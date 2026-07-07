@@ -61,6 +61,12 @@ export type Food = {
   created_at: string
 }
 
+export type AssistantMemory = {
+  id: string
+  content: string
+  created_at: string
+}
+
 export type MealSlot = 'desayuno' | 'almuerzo' | 'merienda' | 'cena' | 'extra'
 
 export type FoodLog = {
@@ -207,6 +213,20 @@ export type Database = {
           serving_name?: string | null
           source_ref?: string | null
           search_text?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      assistant_memories: {
+        Row: AssistantMemory
+        Insert: {
+          id?: string
+          content: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          content?: string
           created_at?: string
         }
         Relationships: []
