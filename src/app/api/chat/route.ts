@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const stream = client.messages.stream({
-      model: 'claude-opus-4-8',
+      model: 'claude-haiku-4-5',
       max_tokens: 1024,
       system: [
         // Bloque estático cacheable — no tocar el orden: el breakpoint va acá
