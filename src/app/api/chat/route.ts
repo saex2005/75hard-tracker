@@ -75,8 +75,10 @@ export async function POST(req: NextRequest) {
   if (!(await isValidToken(req.cookies.get(AUTH_COOKIE)?.value))) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return NextResponse.json({ error: 'Falta ANTHROPIC_API_KEY en el server' }, { status: 500 })
+  // La key puede venir como ANTHROPIC_API_KEY o API_PRIVATE_KEY (nombre usado en Vercel)
+  const apiKey = process.env.ANTHROPIC_API_KEY || process.env.API_PRIVATE_KEY
+  if (!apiKey) {
+    return NextResponse.json({ error: 'Falta la API key de Anthropic en el server' }, { status: 500 })
   }
 
   let messages: ChatMessage[]
@@ -99,7 +101,7 @@ export async function POST(req: NextRequest) {
     liveState = '# Estado del día\n\nNo se pudo leer Supabase — respondé sin datos del día y aclaralo.'
   }
 
-  const client = new Anthropic()
+  const client = new Anthropic({ apiKey })
 
   try {
     const stream = client.messages.stream({
