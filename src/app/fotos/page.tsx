@@ -11,6 +11,8 @@ export default function FotosPage() {
   const [days, setDays] = useState<DayRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<DayRecord | null>(null)
+  const [compareA, setCompareA] = useState<string | null>(null)
+  const [compareB, setCompareB] = useState<string | null>(null)
   const dialogRef = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
@@ -18,9 +20,15 @@ export default function FotosPage() {
       .from('days')
       .select('*')
       .not('photo_url', 'is', null)
-      .order('day_number', { ascending: true })
+      .order('date', { ascending: true })
       .then(({ data }) => {
-        setDays((data ?? []).filter((d) => d.photo_url))
+        const withPhoto = (data ?? []).filter((d) => d.photo_url)
+        setDays(withPhoto)
+        // Default: primera foto vs la más reciente
+        if (withPhoto.length >= 2) {
+          setCompareA(withPhoto[0].id)
+          setCompareB(withPhoto[withPhoto.length - 1].id)
+        }
         setLoading(false)
       })
   }, [])
@@ -65,6 +73,59 @@ export default function FotosPage() {
         <h1 className="text-3xl font-black tracking-tight">Fotos</h1>
         <p className="text-sm text-[#A1A1AA] mt-1">{days.length} fotos de progreso</p>
       </header>
+
+      {/* Comparador: Día 1 vs hoy (o los días que elijas) */}
+      {days.length >= 2 && compareA && compareB && (
+        <section aria-label="Comparador de progreso" className="mb-6">
+          <h2 className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#52525B] mb-3">
+            Comparar
+          </h2>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { value: compareA, set: setCompareA, side: 'Antes' },
+              { value: compareB, set: setCompareB, side: 'Después' },
+            ].map(({ value, set, side }) => {
+              const day = days.find((d) => d.id === value)
+              return (
+                <div key={side} className="space-y-1.5">
+                  <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-surface2 border border-[#262626]">
+                    {day && (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={day.photo_url!}
+                        alt={`${side}: Día ${day.day_number}`}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                    {day && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/70 py-1.5 px-2 flex justify-between items-baseline">
+                        <span className="text-xs font-black text-[#FAFAFA]">
+                          Día {day.day_number}
+                        </span>
+                        <span className="text-[10px] font-mono text-[#A1A1AA]">
+                          {formatDate(day.date)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <select
+                    value={value}
+                    onChange={(e) => set(e.target.value)}
+                    aria-label={`Elegir foto de ${side.toLowerCase()}`}
+                    className="w-full h-9 bg-surface border border-[#262626] rounded-lg px-2 text-xs text-[#A1A1AA] focus:outline-none focus:border-accent"
+                  >
+                    {days.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        Día {d.day_number} — {formatDate(d.date)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
 
       {days.length === 0 ? (
         <div className="text-center py-12">

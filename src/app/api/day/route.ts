@@ -31,12 +31,30 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(data)
 }
 
+// Solo campos de tasks — date/day_number/id no se tocan por API
+const PATCHABLE = [
+  'gym_done', 'gym_minutes', 'cardio_done', 'cardio_minutes', 'water_bottles',
+  'diet_done', 'reading_done', 'reading_page', 'photo_url',
+  'insight_done', 'insight_minutes', 'completed',
+] as const
+
 export async function PATCH(request: NextRequest) {
   const body = await request.json()
-  const { id, ...patch } = body
+  const { id, ...rest } = body
 
   if (!id) {
     return NextResponse.json({ error: 'id required' }, { status: 400 })
+  }
+
+  const patch: Partial<Database['public']['Tables']['days']['Update']> = {}
+  for (const key of PATCHABLE) {
+    if (key in rest) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(patch as any)[key] = rest[key]
+    }
+  }
+  if (Object.keys(patch).length === 0) {
+    return NextResponse.json({ error: 'sin campos válidos para actualizar' }, { status: 400 })
   }
 
   const supabase = getSupabase()

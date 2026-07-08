@@ -31,7 +31,9 @@ export default function PhotoUpload({ date, currentUrl, onUploaded, disabled }: 
 
     try {
       const ext = file.name.split('.').pop() ?? 'jpg'
-      const path = `${date}/photo.${ext}`
+      // Path con timestamp: cambiar la foto genera URL nueva y el CDN
+      // no puede servir la versión vieja cacheada
+      const path = `${date}/photo-${Date.now()}.${ext}`
 
       const { error: uploadError } = await supabase.storage
         .from('progress-photos')

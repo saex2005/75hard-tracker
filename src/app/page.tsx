@@ -3,8 +3,10 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
 import { supabase, type DayRecord, type ChallengeState } from '@/lib/supabase'
-import { calcDayNumber, todayISO, isPastDay } from '@/lib/utils'
+import { calcDayNumber, todayISO, isDayComplete } from '@/lib/utils'
+import { getSessionForDate, SESSION_LABELS } from '@/config/gym'
 import { cacheDay, cacheChallengeState, getCachedDay, getCachedChallengeState, enqueue, getQueue, clearQueue } from '@/lib/offlineCache'
 import { CHALLENGE_CONFIG, BOTTLES_PER_DAY } from '@/config/challenge'
 import ProgressBar from '@/components/ProgressBar'
@@ -25,7 +27,6 @@ type AppState =
 export default function HomePage() {
   const [state, setState] = useState<AppState>({ status: 'loading' })
   const [saving, setSaving] = useState(false)
-  const [closing, setClosing] = useState(false)
   const [restartLoading, setRestartLoading] = useState(false)
 
   const loadData = useCallback(async () => {
@@ -61,7 +62,8 @@ export default function HomePage() {
       return
     }
 
-    // Detectar si el día anterior falló
+    // Detectar si el día anterior falló — pero si las 7 tasks estaban hechas
+    // y solo faltó el flag, NO es un fallo (el cron lo cierra por red de seguridad)
     if (dayNumber > 1) {
       const yesterday = new Date()
       yesterday.setDate(yesterday.getDate() - 1)
@@ -69,11 +71,11 @@ export default function HomePage() {
 
       const { data: yDay } = await supabase
         .from('days')
-        .select('completed')
+        .select('*')
         .eq('date', yesterdayISO)
         .single()
 
-      if (yDay && !yDay.completed) {
+      if (yDay && !yDay.completed && !isDayComplete(yDay)) {
         setState({ status: 'failed', dayNumber: dayNumber - 1, streak: dayNumber - 1 })
         return
       }
@@ -122,6 +124,12 @@ export default function HomePage() {
       return
     }
 
+    // Fila creada antes de un reset → day_number desactualizado, corregirlo
+    if (dayData.day_number !== dayNumber) {
+      await supabase.from('days').update({ day_number: dayNumber }).eq('id', dayData.id)
+      dayData = { ...dayData, day_number: dayNumber }
+    }
+
     cacheDay(dayData)
     cacheChallengeState(cs)
     setState({ status: 'active', day: dayData, challengeState: cs, dayNumber })
@@ -135,17 +143,37 @@ export default function HomePage() {
     if (state.status !== 'active') return
     const prev = state.day
     const optimistic = { ...prev, ...patch }
-    setState({ status: 'active', day: optimistic, challengeState: state.challengeState, dayNumber: state.dayNumber })
+
+    // Auto-cierre: `completed` es un derivado de las 7 tasks, en cada escritura.
+    // Se cierra solo al marcar la última y se reabre si desmarcás algo.
+    optimistic.completed = isDayComplete(optimistic)
+    const fullPatch = { ...patch, completed: optimistic.completed }
+
+    let challengeState = state.challengeState
+    const justCompleted = optimistic.completed && !prev.completed
+    if (justCompleted && state.dayNumber > challengeState.best_streak) {
+      challengeState = { ...challengeState, best_streak: state.dayNumber }
+    }
+
+    setState({ status: 'active', day: optimistic, challengeState, dayNumber: state.dayNumber })
     cacheDay(optimistic)
+    cacheChallengeState(challengeState)
     setSaving(true)
+
     if (!navigator.onLine) {
-      enqueue({ dayId: prev.id, patch })
+      enqueue({ dayId: prev.id, patch: fullPatch })
       setSaving(false)
       return
     }
-    const { error } = await supabase.from('days').update(patch).eq('id', prev.id)
+
+    const { error } = await supabase.from('days').update(fullPatch).eq('id', prev.id)
     if (error) {
       setState({ status: 'active', day: prev, challengeState: state.challengeState, dayNumber: state.dayNumber })
+    } else if (justCompleted && state.dayNumber > state.challengeState.best_streak) {
+      await supabase
+        .from('challenge_state')
+        .update({ best_streak: state.dayNumber })
+        .eq('id', 1)
     }
     setSaving(false)
   }
@@ -155,42 +183,19 @@ export default function HomePage() {
       if (state.status !== 'active') return
       const q = getQueue()
       if (q.length === 0) return
+      // Solo descartar lo que se aplicó bien — si algo falla queda en cola
+      const failed: typeof q = []
       for (const item of q) {
-        await supabase.from('days').update(item.patch).eq('id', item.dayId)
+        const { error } = await supabase.from('days').update(item.patch).eq('id', item.dayId)
+        if (error) failed.push(item)
       }
       clearQueue()
+      for (const item of failed) enqueue(item)
+      if (failed.length === 0) loadData()
     }
     window.addEventListener('online', flushQueue)
     return () => window.removeEventListener('online', flushQueue)
-  }, [state])
-
-  async function closeDay() {
-    if (state.status !== 'active') return
-    setClosing(true)
-
-    const { error: dayError } = await supabase
-      .from('days')
-      .update({ completed: true })
-      .eq('id', state.day.id)
-
-    if (!dayError) {
-      const newStreak = state.dayNumber
-      if (newStreak > state.challengeState.best_streak) {
-        await supabase
-          .from('challenge_state')
-          .update({ best_streak: newStreak })
-          .eq('id', 1)
-      }
-      setState({
-        status: 'active',
-        day: { ...state.day, completed: true },
-        challengeState: state.challengeState,
-        dayNumber: state.dayNumber,
-      })
-    }
-
-    setClosing(false)
-  }
+  }, [state, loadData])
 
   async function handleRestart() {
     setRestartLoading(true)
@@ -295,14 +300,7 @@ export default function HomePage() {
 
   const { day, dayNumber } = state
   const waterDone = day.water_bottles >= BOTTLES_PER_DAY
-  const allDone =
-    day.gym_done &&
-    day.cardio_done &&
-    waterDone &&
-    day.diet_done &&
-    day.reading_done &&
-    day.insight_done &&
-    !!day.photo_url
+  const todaySession = getSessionForDate(day.date)
 
   return (
     <main className="max-w-md mx-auto px-4 pt-6 pb-4 space-y-5" aria-label="Checklist del día">
@@ -341,16 +339,22 @@ export default function HomePage() {
                 gym_minutes: !day.gym_done ? 45 : 0,
               })
             }
-            disabled={day.completed}
           >
-            {day.gym_done && (
-              <MinutePicker
-                minutes={day.gym_minutes}
-                onChange={(n) => updateDay({ gym_minutes: n })}
-                label="gym"
-                disabled={day.completed}
-              />
-            )}
+            <div className="space-y-2">
+              <Link
+                href="/gym"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:brightness-110"
+              >
+                Hoy toca {SESSION_LABELS[todaySession]} — ver rutina →
+              </Link>
+              {day.gym_done && (
+                <MinutePicker
+                  minutes={day.gym_minutes}
+                  onChange={(n) => updateDay({ gym_minutes: n })}
+                  label="gym"
+                />
+              )}
+            </div>
           </TaskCard>
 
           {/* Cardio */}
@@ -364,14 +368,12 @@ export default function HomePage() {
                 cardio_minutes: !day.cardio_done ? 45 : 0,
               })
             }
-            disabled={day.completed}
           >
             {day.cardio_done && (
               <MinutePicker
                 minutes={day.cardio_minutes}
                 onChange={(n) => updateDay({ cardio_minutes: n })}
                 label="cardio"
-                disabled={day.completed}
               />
             )}
           </TaskCard>
@@ -381,12 +383,10 @@ export default function HomePage() {
             icon="💧"
             label="Agua — 1 galón"
             done={waterDone}
-            disabled={day.completed}
           >
             <WaterCounter
               bottles={day.water_bottles}
               onChange={(n) => updateDay({ water_bottles: n })}
-              disabled={day.completed}
             />
           </TaskCard>
 
@@ -396,7 +396,6 @@ export default function HomePage() {
             label="Dieta — sin cheat meals"
             done={day.diet_done}
             onToggle={() => updateDay({ diet_done: !day.diet_done })}
-            disabled={day.completed}
           />
 
           {/* InsightMkt */}
@@ -410,7 +409,6 @@ export default function HomePage() {
                 insight_minutes: !day.insight_done ? 180 : 0,
               })
             }
-            disabled={day.completed}
           >
             {day.insight_done && (
               <MinutePicker
@@ -418,7 +416,6 @@ export default function HomePage() {
                 onChange={(n) => updateDay({ insight_minutes: n })}
                 label="InsightMkt"
                 options={[120, 150, 180, 210, 240]}
-                disabled={day.completed}
               />
             )}
           </TaskCard>
@@ -436,7 +433,6 @@ export default function HomePage() {
                   : Math.max(0, (day.reading_page || 0) - 10),
               })
             }
-            disabled={day.completed}
           >
             {day.reading_done && (
               <p className="text-xs text-[#A1A1AA] font-medium">
@@ -450,37 +446,21 @@ export default function HomePage() {
             icon="📸"
             label="Foto del día"
             done={!!day.photo_url}
-            disabled={day.completed}
           >
             <PhotoUpload
               date={day.date}
               currentUrl={day.photo_url}
               onUploaded={(url) => updateDay({ photo_url: url })}
-              disabled={day.completed}
             />
           </TaskCard>
         </div>
       </section>
 
-      {/* CTA Cerrar día */}
-      {allDone && !day.completed && (
-        <div className="animate-slide-up pt-2">
-          <button
-            type="button"
-            onClick={closeDay}
-            disabled={closing}
-            className="w-full h-14 bg-accent text-black font-black text-base rounded-xl
-              transition-all duration-150 active:scale-[0.98] hover:brightness-105
-              disabled:opacity-60 disabled:cursor-not-allowed tracking-tight"
-          >
-            {closing ? 'Guardando...' : 'CERRAR DÍA ✓'}
-          </button>
-        </div>
-      )}
-
+      {/* El día se cierra solo cuando las 7 tasks están completas */}
       {day.completed && (
-        <div className="text-center py-2 animate-fade-in" role="status" aria-live="polite">
-          <p className="text-green-400 font-bold text-sm">✓ Día {dayNumber} completado</p>
+        <div className="text-center py-3 animate-slide-up" role="status" aria-live="polite">
+          <p className="text-green-400 font-black text-base">✓ Día {dayNumber} completado</p>
+          <p className="text-xs text-[#52525B] mt-1">Cerrado automáticamente. Mañana se sigue.</p>
         </div>
       )}
 

@@ -9,6 +9,10 @@ interface WaterCounterProps {
   disabled?: boolean
 }
 
+// Se puede registrar más agua que el objetivo (días de doble entreno) —
+// el task se cumple con BOTTLES_PER_DAY, el tope es solo de sanidad
+const HARD_CAP = 8
+
 export default function WaterCounter({ bottles, onChange, disabled }: WaterCounterProps) {
   const pct = Math.min(1, bottles / BOTTLES_PER_DAY)
 
@@ -17,7 +21,7 @@ export default function WaterCounter({ bottles, onChange, disabled }: WaterCount
   }
 
   function increment() {
-    if (bottles < BOTTLES_PER_DAY) onChange(bottles + 1)
+    if (bottles < HARD_CAP) onChange(bottles + 1)
   }
 
   return (
@@ -56,12 +60,12 @@ export default function WaterCounter({ bottles, onChange, disabled }: WaterCount
         <button
           type="button"
           onClick={increment}
-          disabled={disabled || bottles >= BOTTLES_PER_DAY}
+          disabled={disabled || bottles >= HARD_CAP}
           aria-label="Sumar una botella"
           className={cn(
             'w-11 h-11 rounded-full bg-accent text-black flex items-center justify-center text-xl font-bold',
             'transition-all duration-[80ms] active:scale-95 hover:brightness-110',
-            (disabled || bottles >= BOTTLES_PER_DAY) && 'opacity-30 cursor-not-allowed active:scale-100'
+            (disabled || bottles >= HARD_CAP) && 'opacity-30 cursor-not-allowed active:scale-100'
           )}
         >
           +

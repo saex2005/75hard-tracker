@@ -301,10 +301,10 @@ export async function POST(req: NextRequest) {
 
   const readable = new ReadableStream<Uint8Array>({
     async start(controller) {
+      let assistantText = ''
       try {
         // Loop agéntico: streamea texto al cliente y resuelve tool calls entre rondas
         const turn: Anthropic.MessageParam[] = [...messages]
-        let assistantText = ''
         for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
           const stream = client.messages.stream({
             model: 'claude-sonnet-5',
@@ -349,6 +349,14 @@ export async function POST(req: NextRequest) {
         }
         controller.close()
       } catch (err) {
+        // Persistir lo que alcanzó a generar — si no, el texto que el usuario
+        // vio en pantalla desaparece del historial al recargar
+        if (assistantText.trim()) {
+          await supabase
+            .from('chat_messages')
+            .insert({ role: 'assistant', content: assistantText + '\n\n[respuesta cortada]' })
+            .then(() => {})
+        }
         controller.error(err)
       }
     },

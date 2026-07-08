@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import webpush from 'web-push'
 import type { Database } from '@/lib/supabase'
-import { todayART, yesterdayART } from '@/lib/utils'
+import { todayART } from '@/lib/utils'
+import { checkAndReset, ensureTodayRow } from '@/lib/reset'
+import { BOTTLES_PER_DAY } from '@/config/challenge'
 
 webpush.setVapidDetails(
   process.env.VAPID_EMAIL!,
@@ -47,6 +49,13 @@ export async function GET(request: NextRequest) {
   // el día UTC ya es el siguiente (bug que impedía el evening y rompía el reset)
   const todayISO = todayART()
 
+  // Garantizar que la fila de hoy exista — si no, las notificaciones se apagan
+  // justo los días que no se abrió la app (cuando más se necesitan)
+  const { dayNumber, active } = await ensureTodayRow(supabase)
+  if (!active) {
+    return NextResponse.json({ sent: 0, reason: 'challenge not active' })
+  }
+
   const { data: today } = await supabase
     .from('days')
     .select('completed, day_number, gym_done, cardio_done, water_bottles, diet_done, reading_done, photo_url, insight_done')
@@ -66,8 +75,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ sent: 0, reason: 'no subscriptions' })
   }
 
-  const d = today.day_number
-  const BOTTLES_GOAL = 4
+  // Día derivado de current_run_start — nunca el day_number congelado de la fila
+  const d = dayNumber
+  const BOTTLES_GOAL = BOTTLES_PER_DAY
   let sent = 0
 
   // --- KICKOFF 07:30 ARS ---
@@ -245,34 +255,10 @@ export async function GET(request: NextRequest) {
 
   // --- CIERRE + RESET 21:05 ARS ---
   if (type === 'evening') {
-    const yesterdayISO = yesterdayART()
-
-    const { data: cs } = await supabase
-      .from('challenge_state')
-      .select('*')
-      .eq('id', 1)
-      .single()
-
-    let reset = false
-    // Solo resetear si el reto ya arrancó (current_run_start <= ayer)
-    if (cs && cs.current_run_start <= yesterdayISO) {
-      const { data: yDay } = await supabase
-        .from('days')
-        .select('completed')
-        .eq('date', yesterdayISO)
-        .single()
-
-      if (yDay && !yDay.completed) {
-        await supabase
-          .from('challenge_state')
-          .update({
-            current_run_start: todayISO,
-            total_restarts: (cs.total_restarts ?? 0) + 1,
-          })
-          .eq('id', 1)
-        reset = true
-      }
-    }
+    // Misma lógica que el cron de 03:05 — un solo lugar (lib/reset.ts)
+    const { reset } = await checkAndReset(supabase)
+    // Si hubo reset recién ahora (el cron de la mañana falló), hoy pasó a ser Día 1
+    const dToday = reset ? 1 : d
 
     if (today.completed) {
       return NextResponse.json({ sent: 0, reset, reason: 'day already completed' })
@@ -290,7 +276,7 @@ export async function GET(request: NextRequest) {
 
     let body: string
     if (pending === 0) {
-      body = 'Completaste todo. Abrí la app y cerrá el día.'
+      body = 'Completaste todo. El día se cierra solo — a descansar.'
     } else if (pending === 1) {
       body = pick([
         'Te falta 1 sola task. No rompas la racha por una task.',
@@ -299,12 +285,12 @@ export async function GET(request: NextRequest) {
     } else {
       body = pick([
         `${pending} tasks pendientes. Todavía llegás. Arrancá ya.`,
-        `Quedan ${pending} tasks para cerrar el Día ${d}. No lo dejes ir.`,
-        `Día ${d} en riesgo. ${pending} tasks sin completar. Movete.`,
+        `Quedan ${pending} tasks para cerrar el Día ${dToday}. No lo dejes ir.`,
+        `Día ${dToday} en riesgo. ${pending} tasks sin completar. Movete.`,
       ])
     }
 
-    sent = await sendPush(subs, `Día ${d} — cerrá el día`, body)
+    sent = await sendPush(subs, `Día ${dToday} — cerrá el día`, body)
     return NextResponse.json({ sent, total: subs.length, type, reset })
   }
 
