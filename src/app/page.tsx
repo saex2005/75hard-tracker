@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { supabase, type DayRecord, type ChallengeState } from '@/lib/supabase'
-import { calcDayNumber, todayISO, isDayComplete } from '@/lib/utils'
+import { calcDayNumber, todayISO, yesterdayART, isDayComplete } from '@/lib/utils'
 import { getSessionForDate, SESSION_LABELS } from '@/config/gym'
 import { cacheDay, cacheChallengeState, getCachedDay, getCachedChallengeState, enqueue, getQueue, clearQueue } from '@/lib/offlineCache'
 import { CHALLENGE_CONFIG, BOTTLES_PER_DAY } from '@/config/challenge'
@@ -65,9 +65,7 @@ export default function HomePage() {
     // Detectar si el día anterior falló — pero si las 7 tasks estaban hechas
     // y solo faltó el flag, NO es un fallo (el cron lo cierra por red de seguridad)
     if (dayNumber > 1) {
-      const yesterday = new Date()
-      yesterday.setDate(yesterday.getDate() - 1)
-      const yesterdayISO = yesterday.toISOString().split('T')[0]
+      const yesterdayISO = yesterdayART()
 
       const { data: yDay } = await supabase
         .from('days')

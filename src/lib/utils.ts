@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import { differenceInDays, parseISO, startOfDay, format } from 'date-fns'
+import { differenceInDays, parseISO, format } from 'date-fns'
 import { CHALLENGE_CONFIG, BOTTLES_PER_DAY } from '@/config/challenge'
 
 export function cn(...inputs: ClassValue[]) {
@@ -8,9 +8,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function calcDayNumber(currentRunStart: string): number {
-  const start = parseISO(currentRunStart)
-  const today = startOfDay(new Date())
-  return differenceInDays(today, start) + 1
+  return dayNumberFor(todayART(), currentRunStart)
 }
 
 export function calcProgressPercent(dayNumber: number): number {
@@ -26,11 +24,13 @@ export function formatDate(dateStr: string): string {
 }
 
 export function todayISO(): string {
-  return format(new Date(), 'yyyy-MM-dd')
+  return todayART()
 }
 
-// Fechas en hora argentina para server routes (Vercel corre en UTC).
-// Argentina es UTC-3 fijo, sin DST — el offset constante es correcto siempre.
+// Fechas en hora argentina — únicas fuentes de "hoy"/"ayer" en toda la app.
+// Vercel corre en UTC y el reloj del dispositivo no es confiable; las filas
+// de `days` están keyeadas por fecha ART. Argentina es UTC-3 fijo, sin DST —
+// el offset constante es correcto siempre.
 export function todayART(): string {
   return new Date(Date.now() - 3 * 3600 * 1000).toISOString().split('T')[0]
 }
@@ -73,7 +73,5 @@ export function isDayComplete(day: DayTasks): boolean {
 }
 
 export function isPastDay(dateStr: string): boolean {
-  const date = parseISO(dateStr)
-  const today = startOfDay(new Date())
-  return differenceInDays(today, date) > 0
+  return dateStr < todayART()
 }
