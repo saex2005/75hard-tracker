@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { supabase } from '@/lib/supabase'
-import { todayART } from '@/lib/utils'
+import { todayART, dayNumberFor } from '@/lib/utils'
 import { ASSISTANT_SYSTEM_PROMPT } from '@/lib/assistant-context'
 import { AUTH_COOKIE, isValidToken } from '@/lib/auth'
 import { CHALLENGE_CONFIG, BOTTLES_PER_DAY } from '@/config/challenge'
@@ -182,12 +182,8 @@ async function buildLiveState(): Promise<string> {
   const hora = nowART.toISOString().slice(11, 16)
   const diaSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'][nowART.getUTCDay()]
 
-  let dayNumber: number | null = null
-  if (state) {
-    const start = new Date(`${state.current_run_start}T00:00:00-03:00`)
-    dayNumber = Math.floor((nowART.getTime() - (start.getTime() - 3 * 3600 * 1000)) / 86400000) + 1
-  }
-  const preChallenge = new Date(`${date}T00:00:00Z`) < new Date(`${CHALLENGE_CONFIG.startDate}T00:00:00Z`)
+  const dayNumber = state ? dayNumberFor(date, state.current_run_start) : null
+  const preChallenge = date < CHALLENGE_CONFIG.startDate
 
   const totals = logs.reduce(
     (acc, l) => ({ kcal: acc.kcal + l.kcal, p: acc.p + l.protein, c: acc.c + l.carbs, g: acc.g + l.fat }),
