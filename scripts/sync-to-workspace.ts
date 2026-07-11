@@ -77,7 +77,7 @@ ${weightLog}
 
 ---
 
-*Generado con: \`npx ts-node scripts/sync-to-workspace.ts\`*
+*Generado con: \`npx tsx scripts/sync-to-workspace.ts\` (con \`.env.local\` cargado)*
 `
 
   writeFileSync(WORKSPACE_FILE, content, 'utf8')

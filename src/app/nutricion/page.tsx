@@ -322,58 +322,112 @@ function TabMealPrep() {
   )
 }
 
+const RECIPE_FILTERS = ['Todas', 'Desayuno', 'Almuerzo', 'Merienda', 'Cena'] as const
+type RecipeFilter = (typeof RECIPE_FILTERS)[number]
+
 function TabRecetas() {
+  const [filter, setFilter] = useState<RecipeFilter>('Todas')
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+
+  const toggle = (name: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      next.has(name) ? next.delete(name) : next.add(name)
+      return next
+    })
+  }
+
+  const visible = filter === 'Todas' ? RECIPES : RECIPES.filter((r) => r.meal.includes(filter))
+
   return (
     <div className="space-y-4 pb-4">
       <p className="text-xs text-[#52525B] font-medium">
-        Combinaciones de lo que ya está cocinado en el batch. Armado en 5-10 min.
+        {RECIPES.length} recetas — combinaciones de lo ya cocinado en el batch, más variantes de desayuno y merienda. Tocá una para ver el armado.
       </p>
 
-      {RECIPES.map((recipe) => (
-        <div key={recipe.name} className="bg-[#141414] border border-[#262626] rounded-xl p-4">
-          {/* Header */}
-          <div className="flex items-start justify-between mb-3">
-            <p className="text-base font-bold">{recipe.name}</p>
-            <div className="text-right shrink-0 ml-3">
-              <p className="text-xs text-accent font-semibold">{recipe.meal}</p>
-              <p className="text-[11px] font-mono text-[#52525B]">{recipe.time}</p>
-            </div>
+      {/* Filtro por comida */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
+        {RECIPE_FILTERS.map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={cn(
+              'shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors duration-150',
+              filter === f
+                ? 'bg-accent text-black'
+                : 'bg-[#141414] border border-[#262626] text-[#A1A1AA]'
+            )}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
+
+      {visible.map((recipe) => {
+        const isOpen = expanded.has(recipe.name)
+        return (
+          <div key={recipe.name} className="bg-[#141414] border border-[#262626] rounded-xl overflow-hidden">
+            {/* Header — siempre visible, toca para expandir */}
+            <button
+              onClick={() => toggle(recipe.name)}
+              className="w-full flex items-start justify-between p-4 text-left"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-base font-bold">{recipe.name}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <p className="text-xs text-accent font-semibold">{recipe.meal}</p>
+                  <span className="text-[#3F3F46]">·</span>
+                  <p className="text-[11px] font-mono text-[#52525B]">{recipe.time}</p>
+                </div>
+                <p className="text-[11px] font-mono text-[#71717A] mt-1.5">
+                  {recipe.macros.kcal} kcal · {recipe.macros.protein}P · {recipe.macros.carbs}C · {recipe.macros.fat}G
+                </p>
+              </div>
+              <span className={cn('text-[#52525B] text-lg shrink-0 ml-3 transition-transform duration-150', isOpen && 'rotate-45')}>
+                +
+              </span>
+            </button>
+
+            {isOpen && (
+              <div className="px-4 pb-4">
+                {recipe.batch.length > 0 && (
+                  <>
+                    <SectionHeader>Del batch</SectionHeader>
+                    <ul className="space-y-1 mb-3">
+                      {recipe.batch.map((item, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <span className="text-[#3F3F46] mt-1 shrink-0">—</span>
+                          <span className="text-sm text-[#A1A1AA] font-medium">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+
+                <SectionHeader>Frescos y condimentos</SectionHeader>
+                <ul className="space-y-1 mb-3">
+                  {recipe.extras.map((item, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="text-[#3F3F46] mt-1 shrink-0">—</span>
+                      <span className="text-sm text-[#A1A1AA] font-medium">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <SectionHeader>Armado</SectionHeader>
+                <ol className="space-y-1.5">
+                  {recipe.steps.map((step, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="text-xs font-black text-accent tabular-nums mt-0.5 shrink-0 w-4">{i + 1}.</span>
+                      <span className="text-sm text-[#A1A1AA] font-medium">{step}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
           </div>
-
-          {/* Del batch */}
-          <SectionHeader>Del batch</SectionHeader>
-          <ul className="space-y-1 mb-3">
-            {recipe.batch.map((item, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <span className="text-[#3F3F46] mt-1 shrink-0">—</span>
-                <span className="text-sm text-[#A1A1AA] font-medium">{item}</span>
-              </li>
-            ))}
-          </ul>
-
-          {/* Frescos / condimentos */}
-          <SectionHeader>Frescos y condimentos</SectionHeader>
-          <ul className="space-y-1 mb-3">
-            {recipe.extras.map((item, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <span className="text-[#3F3F46] mt-1 shrink-0">—</span>
-                <span className="text-sm text-[#A1A1AA] font-medium">{item}</span>
-              </li>
-            ))}
-          </ul>
-
-          {/* Armado */}
-          <SectionHeader>Armado</SectionHeader>
-          <ol className="space-y-1.5">
-            {recipe.steps.map((step, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <span className="text-xs font-black text-accent tabular-nums mt-0.5 shrink-0 w-4">{i + 1}.</span>
-                <span className="text-sm text-[#A1A1AA] font-medium">{step}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
-      ))}
+        )
+      })}
 
       {/* Banco de condimentos */}
       <div className="bg-[#141414] border border-[#262626] rounded-xl p-4">

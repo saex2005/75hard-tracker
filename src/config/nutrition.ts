@@ -193,9 +193,11 @@ export type Recipe = {
   batch: string[]
   extras: string[]
   steps: string[]
+  macros: { kcal: number; protein: number; carbs: number; fat: number }
 }
 
 export const RECIPES: Recipe[] = [
+  // ── Almuerzo / Cena (batch original) ──
   {
     name: 'Bowl criollo',
     meal: 'Almuerzo',
@@ -207,6 +209,7 @@ export const RECIPES: Recipe[] = [
       'Armar el bowl: arroz abajo, pollo y verduras arriba',
       'Salsa criolla y aceite en crudo recién al momento de comer',
     ],
+    macros: { kcal: 690, protein: 71, carbs: 81, fat: 15 },
   },
   {
     name: 'Bowl limón y orégano',
@@ -219,6 +222,7 @@ export const RECIPES: Recipe[] = [
       'Mezclar todo en el tupper',
       'Limón, orégano y aceite al comer — va bien frío si no hay microondas',
     ],
+    macros: { kcal: 690, protein: 71, carbs: 81, fat: 15 },
   },
   {
     name: 'Ensalada de atún y papa',
@@ -231,6 +235,7 @@ export const RECIPES: Recipe[] = [
       'Huevo duro en cuartos arriba (suma ~6 g de proteína extra)',
       'Vinagre, pimienta y aceite en crudo al servir',
     ],
+    macros: { kcal: 530, protein: 44, carbs: 48, fat: 16 },
   },
   {
     name: 'Pollo a la mostaza',
@@ -243,6 +248,7 @@ export const RECIPES: Recipe[] = [
       'Calentar pollo, papa y verduras en microondas',
       'Salsa por arriba y aceite en crudo al final',
     ],
+    macros: { kcal: 556, protein: 68.5, carbs: 54, fat: 14 },
   },
   {
     name: 'Arroz salteado',
@@ -255,6 +261,7 @@ export const RECIPES: Recipe[] = [
       'Sumar pollo y arroz hasta que tome calor y un poco de dorado',
       'Apagar, mezclar el huevo picado y las especias, aceite en crudo al servir',
     ],
+    macros: { kcal: 775, protein: 78, carbs: 82, fat: 21 },
   },
   {
     name: 'Merluza al limón con puré',
@@ -267,6 +274,7 @@ export const RECIPES: Recipe[] = [
       'Calentar la merluza con provenzal (microondas o sartén sin aceite)',
       'Limón por arriba y ensalada de ½ plato al lado',
     ],
+    macros: { kcal: 470, protein: 42, carbs: 38, fat: 12 },
   },
   {
     name: 'Carne al chimichurri',
@@ -279,6 +287,7 @@ export const RECIPES: Recipe[] = [
       'Calentar carne y papa',
       'Chimichurri por arriba, ensalada de ½ plato',
     ],
+    macros: { kcal: 600, protein: 53.5, carbs: 45, fat: 18 },
   },
   {
     name: 'Wok especiado',
@@ -291,6 +300,7 @@ export const RECIPES: Recipe[] = [
       'Especias al final para que no se quemen',
       'Aceite en crudo al servir',
     ],
+    macros: { kcal: 725, protein: 72, carbs: 88, fat: 15 },
   },
   {
     name: 'Ensalada tibia de batata y atún',
@@ -303,6 +313,335 @@ export const RECIPES: Recipe[] = [
       'Mezclar mostaza + vinagre + aceite → vinagreta',
       'Todo al bowl, vinagreta por arriba',
     ],
+    macros: { kcal: 436, protein: 34, carbs: 40, fat: 10 },
+  },
+
+  // ── Desayuno (~650 kcal / 35 g P) ──
+  {
+    name: 'Panqueque proteico de avena',
+    meal: 'Desayuno',
+    time: '10 min',
+    batch: [],
+    extras: ['4 huevos', '40 g de avena (seca)', '1 banana', 'Canela (opcional)'],
+    steps: [
+      'Batir los huevos con la avena hasta integrar',
+      'Cocinar en sartén antiadherente sin aceite, tipo panqueque, dorando de los dos lados',
+      'Servir con la banana en rodajas arriba y canela si querés',
+    ],
+    macros: { kcal: 603, protein: 36, carbs: 56, fat: 27 },
+  },
+  {
+    name: 'Panqueques de banana con whey',
+    meal: 'Desayuno',
+    time: '10 min',
+    batch: [],
+    extras: ['3 huevos', '2 bananas', '1 scoop de whey'],
+    steps: [
+      'Pisar las bananas hasta puré, batir con los huevos',
+      'Cocinar en sartén antiadherente sin aceite, panqueques chicos',
+      'Whey batido aparte con agua o leche descremada',
+    ],
+    macros: { kcal: 589, protein: 47, carbs: 60, fat: 20 },
+  },
+  {
+    name: 'Tostadas con palta y huevo poché',
+    meal: 'Desayuno',
+    time: '10 min',
+    batch: [],
+    extras: ['3 huevos', '4 tostadas integrales (100 g)', '¼ palta (42 g)', '20 g de queso untable'],
+    steps: [
+      'Pochar los huevos en agua hirviendo con un chorrito de vinagre, 3 min',
+      'Tostar el pan, untar con el queso',
+      'Palta pisada o en láminas arriba, huevo poché encima, sal y pimienta',
+    ],
+    macros: { kcal: 597, protein: 34, carbs: 49, fat: 28 },
+  },
+  {
+    name: 'Bowl salado de meal prep',
+    meal: 'Desayuno',
+    time: '5 min',
+    batch: ['150 g de arroz', '100 g de pollo desmenuzado'],
+    extras: ['2 huevos', '1 banana aparte'],
+    steps: [
+      'Calentar el arroz y el pollo del meal prep',
+      'Revolver los huevos en sartén antiadherente sin aceite',
+      'Servir todo junto, la banana aparte como postre',
+    ],
+    macros: { kcal: 582, protein: 50, carbs: 70, fat: 15 },
+  },
+  {
+    name: 'Yogur con frutos secos y whey',
+    meal: 'Desayuno',
+    time: '5 min',
+    batch: [],
+    extras: ['200 g de yogur griego', '20 g de frutos secos', '2 tostadas integrales', '1 banana', '1 scoop de whey'],
+    steps: [
+      'Mezclar el yogur con el whey hasta disolver',
+      'Sumar los frutos secos y la banana en rodajas',
+      'Las tostadas aparte, simples o con lo que quede de queso untable',
+    ],
+    macros: { kcal: 633, protein: 48, carbs: 69, fat: 20 },
+  },
+  {
+    name: 'Bowl de yogur con avena tostada',
+    meal: 'Desayuno',
+    time: '10 min',
+    batch: [],
+    extras: ['200 g de yogur griego', '30 g de avena tostada en sartén seca', '1 manzana', '20 g de frutos secos', '½ scoop de whey'],
+    steps: [
+      'Tostar la avena en sartén seca (sin aceite) 2-3 min hasta que dore, dejar enfriar',
+      'Mezclar el whey con el yogur',
+      'Sumar la avena tostada, la manzana en cubos y los frutos secos arriba',
+    ],
+    macros: { kcal: 540, protein: 34, carbs: 60, fat: 19.5 },
+  },
+
+  // ── Almuerzo (~700 kcal / 50 g P) ──
+  {
+    name: 'Wok de pollo al jengibre',
+    meal: 'Almuerzo',
+    time: '10 min',
+    batch: ['200 g de pollo', '250 g de arroz', '200 g de verduras'],
+    extras: ['Jengibre y salsa de soja sin azúcar (chequear etiqueta)', '10 g de aceite'],
+    steps: [
+      'Sartén antiadherente sin aceite, verduras y pollo en tiras a fuego fuerte',
+      'Sumar el arroz, jengibre y un chorrito de soja, saltear 2-3 min',
+      'Aceite en crudo al servir',
+    ],
+    macros: { kcal: 705, protein: 72, carbs: 82, fat: 15 },
+  },
+  {
+    name: 'Merluza con papas y huevo',
+    meal: 'Almuerzo',
+    time: '10 min',
+    batch: ['200 g de merluza', '300 g de papa'],
+    extras: ['1 huevo duro', 'Ensalada de hojas y tomate', '10 g de aceite'],
+    steps: [
+      'Hervir o calentar la papa en cubos',
+      'Calentar la merluza (microondas o sartén sin aceite)',
+      'Armar el plato con el huevo duro en cuartos, ensalada y aceite en crudo',
+    ],
+    macros: { kcal: 690, protein: 51, carbs: 68, fat: 18 },
+  },
+  {
+    name: 'Cuadrada al chimichurri con batata',
+    meal: 'Almuerzo',
+    time: '10 min',
+    batch: ['200 g de nalga o cuadrada', '300 g de batata'],
+    extras: ['Chimichurri seco', 'Ensalada de hojas', '10 g de aceite'],
+    steps: [
+      'Hidratar el chimichurri en vinagre y el aceite de la comida',
+      'Calentar la carne y la batata',
+      'Chimichurri por arriba, ensalada al costado',
+    ],
+    macros: { kcal: 678, protein: 54, carbs: 73, fat: 18 },
+  },
+  {
+    name: 'Poke bowl de atún',
+    meal: 'Almuerzo',
+    time: '5 min',
+    batch: ['200 g de atún al natural', '200 g de arroz'],
+    extras: ['1 huevo duro', '50 g de palta', 'Pepino y tomate', 'Limón', '5 g de aceite'],
+    steps: [
+      'Armar el bowl con el arroz de base',
+      'Atún escurrido, huevo en cuartos, palta y vegetales frescos arriba',
+      'Limón y aceite en crudo al servir',
+    ],
+    macros: { kcal: 675, protein: 53, carbs: 66, fat: 19 },
+  },
+  {
+    name: 'Pollo al curry seco',
+    meal: 'Almuerzo',
+    time: '10 min',
+    batch: ['200 g de pollo', '250 g de arroz integral', '200 g de verduras asadas'],
+    extras: ['Curry en polvo', '10 g de aceite'],
+    steps: [
+      'Saltear el pollo desmenuzado en sartén antiadherente sin aceite con curry',
+      'Sumar el arroz y las verduras, mezclar bien',
+      'Aceite en crudo al servir',
+    ],
+    macros: { kcal: 700, protein: 72, carbs: 83, fat: 15.5 },
+  },
+  {
+    name: 'Ensalada tibia de pollo y batata',
+    meal: 'Almuerzo',
+    time: '10 min',
+    batch: ['200 g de pollo', '250 g de batata'],
+    extras: ['1 huevo duro', 'Hojas verdes', '10 g de aceite'],
+    steps: [
+      'Calentar el pollo y la batata en cubos',
+      'Sumar el huevo duro en cuartos y las hojas verdes',
+      'Aceite en crudo al servir',
+    ],
+    macros: { kcal: 635, protein: 72, carbs: 56, fat: 20 },
+  },
+
+  // ── Merienda (~450 kcal / 30 g P) — un solo combo, sin sumar de más ──
+  {
+    name: 'Batido proteico',
+    meal: 'Merienda',
+    time: '5 min',
+    batch: [],
+    extras: ['200 ml de leche descremada', '1 scoop de whey', '1 banana', '20 g de avena'],
+    steps: [
+      'Licuar todo junto hasta que quede cremoso',
+      'Tomar frío, ideal post-cardio',
+    ],
+    macros: { kcal: 375, protein: 36, carbs: 54, fat: 4 },
+  },
+  {
+    name: 'Tostadas con atún',
+    meal: 'Merienda',
+    time: '5 min',
+    batch: ['100 g de atún al natural'],
+    extras: ['3 tostadas integrales', 'Tomate en rodajas', '1 banana'],
+    steps: [
+      'Tostar el pan',
+      'Atún escurrido encima con tomate y una pizca de sal',
+      'Banana aparte',
+    ],
+    macros: { kcal: 392, protein: 29, carbs: 58, fat: 3 },
+  },
+  {
+    name: 'Tostadas con jamón y queso',
+    meal: 'Merienda',
+    time: '5 min',
+    batch: [],
+    extras: ['2 tostadas integrales', '80 g de jamón cocido light (sin azúcar en etiqueta)', '60 g de queso descremado', '1 manzana grande'],
+    steps: [
+      'Tostar el pan, armar el sándwich con jamón y queso',
+      'La manzana entera aparte',
+    ],
+    macros: { kcal: 396, protein: 28, carbs: 55, fat: 8 },
+  },
+  {
+    name: 'Yogur con frutos rojos',
+    meal: 'Merienda',
+    time: '5 min',
+    batch: [],
+    extras: ['200 g de yogur griego', '½ scoop de whey', '100 g de frutillas', '20 g de frutos secos', '1 banana'],
+    steps: [
+      'Mezclar el yogur con el whey hasta disolver',
+      'Sumar las frutillas cortadas, la banana en rodajas y los frutos secos',
+    ],
+    macros: { kcal: 482, protein: 31, carbs: 55, fat: 18 },
+  },
+  {
+    name: 'Wrap de pavita',
+    meal: 'Merienda',
+    time: '5 min',
+    batch: [],
+    extras: ['1 wrap integral', '80 g de pavita o jamón', '30 g de queso untable', 'Hojas verdes', '1 mandarina', '20 g de frutos secos'],
+    steps: [
+      'Untar el wrap con el queso, sumar la pavita y las hojas verdes',
+      'Enrollar y cortar al medio',
+      'Mandarina y frutos secos aparte',
+    ],
+    macros: { kcal: 424, protein: 28, carbs: 42, fat: 16.5 },
+  },
+  {
+    name: 'Queso magro con jamón y pera',
+    meal: 'Merienda',
+    time: '5 min',
+    batch: [],
+    extras: ['100 g de queso magro tipo cottage o descremado', '2 tostadas integrales', '80 g de jamón cocido light', '1 pera'],
+    steps: [
+      'Tostar el pan, armar con el queso y el jamón',
+      'La pera entera aparte',
+    ],
+    macros: { kcal: 387, protein: 34, carbs: 48, fat: 7 },
+  },
+  {
+    name: 'Chocolatada proteica',
+    meal: 'Merienda',
+    time: '5 min',
+    batch: [],
+    extras: ['250 ml de leche descremada', '1 scoop de whey', 'Cacao amargo sin azúcar', '1 banana'],
+    steps: [
+      'Licuar todo junto',
+      'Opción liviana — ideal si el resto del día viene arriba en calorías',
+    ],
+    macros: { kcal: 330, protein: 35, carbs: 45, fat: 2.6 },
+  },
+
+  // ── Cena (~550 kcal / 50 g P) ──
+  {
+    name: 'Merluza al limón con puré de batata',
+    meal: 'Cena',
+    time: '10 min',
+    batch: ['250 g de merluza', '250 g de batata'],
+    extras: ['Verduras al vapor', '10 g de aceite'],
+    steps: [
+      'Pisar la batata caliente con el aceite en crudo → puré',
+      'Calentar la merluza con limón (microondas o sartén sin aceite)',
+      'Servir con las verduras al vapor',
+    ],
+    macros: { kcal: 563, protein: 50, carbs: 58, fat: 12.5 },
+  },
+  {
+    name: 'Cuadrada al chimichurri con arroz',
+    meal: 'Cena',
+    time: '10 min',
+    batch: ['200 g de nalga o cuadrada', '150 g de arroz'],
+    extras: ['Ensalada', '5 g de aceite'],
+    steps: [
+      'Chimichurri hidratado en vinagre y el aceite de la comida',
+      'Calentar la carne y el arroz',
+      'Chimichurri por arriba, ensalada al costado',
+    ],
+    macros: { kcal: 565, protein: 54, carbs: 48, fat: 13.5 },
+  },
+  {
+    name: 'Tortilla de atún y papa',
+    meal: 'Cena',
+    time: '10 min',
+    batch: ['160 g de atún al natural', '200 g de papa'],
+    extras: ['2 huevos', '10 g de aceite'],
+    steps: [
+      'Hervir la papa en rodajas finas',
+      'Batir los huevos con el atún escurrido y la papa',
+      'Cuajar en sartén antiadherente sin aceite, aceite en crudo al servir',
+    ],
+    macros: { kcal: 575, protein: 50, carbs: 39, fat: 22 },
+  },
+  {
+    name: 'Wok liviano de pollo',
+    meal: 'Cena',
+    time: '10 min',
+    batch: ['150 g de pollo', '150 g de arroz', '200 g de verduras'],
+    extras: ['10 g de aceite'],
+    steps: [
+      'Sartén antiadherente sin aceite, verduras y pollo a fuego fuerte',
+      'Sumar el arroz, mezclar 2-3 min',
+      'Aceite en crudo al servir',
+    ],
+    macros: { kcal: 540, protein: 53.5, carbs: 60, fat: 14 },
+  },
+  {
+    name: 'Ensalada fría de huevo y pollo',
+    meal: 'Cena',
+    time: '5 min',
+    batch: ['2 huevos duros', '50 g de pollo desmenuzado', '200 g de papa'],
+    extras: ['60 g de jamón light', 'Hojas verdes', '5 g de aceite o vinagreta'],
+    steps: [
+      'Papa hervida en cubos, fría',
+      'Sumar huevo en cuartos, pollo y jamón',
+      'Hojas verdes y vinagreta o aceite en crudo',
+    ],
+    macros: { kcal: 547, protein: 45, carbs: 40, fat: 19 },
+  },
+  {
+    name: 'Pollo a la plancha con ensalada de garbanzos',
+    meal: 'Cena',
+    time: '10 min',
+    batch: ['200 g de pollo', '150 g de garbanzos cocidos (del freezer)'],
+    extras: ['Hojas verdes y tomate', '10 g de aceite'],
+    steps: [
+      'Pollo a la plancha en sartén antiadherente sin aceite',
+      'Garbanzos con hojas verdes y tomate',
+      'Aceite en crudo al servir',
+    ],
+    macros: { kcal: 596, protein: 75, carbs: 47, fat: 18 },
   },
 ]
 
