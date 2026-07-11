@@ -52,9 +52,9 @@ Las 4 comidas (nada fuera de ellas):
 - 16:45 Merienda (~450 kcal, 30P): 200g yogur griego + 40g avena, o 2 tostadas integrales + queso untable + pavita; + 1 fruta + 20g frutos secos (2-3x/semana)
 - 20:30 Cena (~550 kcal, 50P): 200g proteína cocida (pollo/cuadrada/merluza/2 latas atún) + 200g papa o batata + ensalada (½ plato) + 10g aceite en crudo
 
-Método del plato: ½ verduras, ¼ proteína, ¼ carbo. Sin carbo → proteína a medio plato.
+Método del plato (½ verduras, ¼ proteína, ¼ carbo, sin carbo → proteína a medio plato): es una RECOMENDACIÓN de la Guía Alimentaria (Lic. Caminero), una guía general que Santiago ya tenía de antes — NO es una de las 8 reglas binarias ni un motivo para decir que una comida "no cuenta" o "está incompleta". Si una comida cumple su macro objetivo y no rompe ninguna de las 8 reglas de abajo, es válida aunque no tenga verdura. Sugerila como default útil, pero nunca la uses para objetar una comida.
 
-Las 8 reglas binarias (definidas antes del Día 1, NO se renegocian):
+Las 8 reglas binarias (definidas antes del Día 1, NO se renegocian) — esto es lo único que define si el task de dieta se cumplió o no:
 1. 4 comidas fijas, nada fuera de ellas
 2. Cero delivery
 3. Cero gaseosa azucarada
@@ -67,7 +67,7 @@ Las 8 reglas binarias (definidas antes del Día 1, NO se renegocian):
 Meal prep (domingo y miércoles 20:30-21:30, cada tanda cubre 4 días = 8 tuppers): 1.6kg pollo o nalga/cuadrada al horno (40 min) + 4 latas atún o 400g merluza + 350g arroz seco + 1.2kg papa hervida + 1.6kg verduras al horno (zapallito, morrón, cebolla, zanahoria) + 8 huevos duros de backup.
 
 Recetas (combinaciones del batch, en la app: /nutricion → Recetas): Bowl criollo, Bowl limón y orégano, Ensalada de atún y papa, Pollo a la mostaza, Arroz salteado, Merluza al limón con puré, Carne al chimichurri, Wok especiado, Ensalada tibia de batata y atún.
-Condimentos libres (no suman macros): salsa criolla, chimichurri, limón + pimienta, mostaza sin miel aligerada, provenzal, curry/comino/pimentón, vinagre/aceto sin azúcar. Regla de oro: el aceite (10g por comida, ya contado en macros) SIEMPRE en crudo al servir, nunca a la sartén. Recalentar en microondas o sartén antiadherente sin aceite. Aderezo con azúcar en la etiqueta = regla 8, no entra.
+Condimentos libres (no suman macros): salsa criolla, chimichurri, limón + pimienta, mostaza sin miel aligerada, provenzal, curry/comino/pimentón, vinagre/aceto sin azúcar. Default recomendado (no regla binaria): el aceite (10g por comida, ya contado en macros) en crudo al servir, para que sea fácil de medir. Pero si algo tiene información nutricional real y declarada (ej. un rocío vegetal cuya etiqueta dice 0 kcal/carbos/grasas en TODOS los rubros, no la genérica "puede redondear para abajo"), no es ambiguo — regla 8 aplica cuando genuinamente no se sabe qué tiene algo, no como regla general anti-spray. Si dudás, pedile la etiqueta completa y evaluá esa, no una suposición genérica del producto. Aderezo con azúcar declarada en la etiqueta sí es regla 8, no entra.
 
 Comidas de emergencia (día desarmado, <15 min): atún + arroz de reserva + huevo duro / omelette de 4 huevos + queso + tostadas integrales / licuado de yogur griego + avena + banana.
 
