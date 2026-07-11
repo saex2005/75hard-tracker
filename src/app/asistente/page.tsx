@@ -24,6 +24,15 @@ export default function AsistentePage() {
   const [loaded, setLoaded] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Auto-grow del textarea (estilo iMessage/WhatsApp) — máximo ~6 líneas, después scroll interno
+  useEffect(() => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, 144)}px`
+  }, [input])
 
   // Historial desde el server — misma conversación en todos los dispositivos
   useEffect(() => {
@@ -190,20 +199,32 @@ export default function AsistentePage() {
         }}
         className="shrink-0 px-4 pb-3 pt-2 border-t border-[#1C1C1C] flex gap-2"
       >
-        <input
+        <textarea
+          ref={textareaRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            // Enter envía, Shift+Enter hace salto de línea (igual que la mayoría de los chats)
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              send(input)
+            }
+          }}
           placeholder="Escribí acá…"
+          rows={1}
           enterKeyHint="send"
+          autoCapitalize="sentences"
+          autoCorrect="on"
+          spellCheck
           // Al cerrar el teclado, iOS a veces deja la página corrida — reacomodar
           onBlur={() => setTimeout(() => window.scrollTo(0, 0), 50)}
-          className="flex-1 h-11 rounded-xl bg-[#141414] border border-[#262626] px-4 text-base text-[#FAFAFA] placeholder-[#3F3F46] outline-none focus:border-accent transition-colors"
+          className="flex-1 resize-none max-h-36 rounded-xl bg-[#141414] border border-[#262626] px-4 py-2.5 text-base leading-[1.4] text-[#FAFAFA] placeholder-[#3F3F46] outline-none focus:border-accent transition-colors"
         />
         <button
           type="submit"
           disabled={!input.trim() || streaming}
           aria-label="Enviar"
-          className="h-11 w-11 shrink-0 rounded-xl bg-accent text-black font-black disabled:opacity-40 transition-transform active:scale-[0.96] flex items-center justify-center"
+          className="h-11 w-11 shrink-0 self-end rounded-xl bg-accent text-black font-black disabled:opacity-40 transition-transform active:scale-[0.96] flex items-center justify-center"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M5 12L19 12M19 12L13 6M19 12L13 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
