@@ -357,19 +357,6 @@ export const RECIPES: Recipe[] = [
     macros: { kcal: 597, protein: 34, carbs: 49, fat: 28 },
   },
   {
-    name: 'Bowl salado de meal prep',
-    meal: 'Desayuno',
-    time: '5 min',
-    batch: ['150 g de arroz', '100 g de pollo desmenuzado'],
-    extras: ['2 huevos', '1 banana aparte'],
-    steps: [
-      'Calentar el arroz y el pollo del meal prep',
-      'Revolver los huevos en sartén antiadherente sin aceite',
-      'Servir todo junto, la banana aparte como postre',
-    ],
-    macros: { kcal: 582, protein: 50, carbs: 70, fat: 15 },
-  },
-  {
     name: 'Yogur con frutos secos y whey',
     meal: 'Desayuno',
     time: '5 min',
@@ -474,6 +461,19 @@ export const RECIPES: Recipe[] = [
       'Aceite en crudo al servir',
     ],
     macros: { kcal: 635, protein: 72, carbs: 56, fat: 20 },
+  },
+  {
+    name: 'Bowl de arroz, pollo y huevo',
+    meal: 'Almuerzo',
+    time: '5 min',
+    batch: ['150 g de arroz', '100 g de pollo desmenuzado'],
+    extras: ['2 huevos', '1 banana aparte'],
+    steps: [
+      'Calentar el arroz y el pollo del meal prep',
+      'Revolver los huevos en sartén antiadherente sin aceite',
+      'Servir todo junto, la banana aparte de postre si querés',
+    ],
+    macros: { kcal: 582, protein: 50, carbs: 70, fat: 15 },
   },
 
   // ── Merienda (~450 kcal / 30 g P) — un solo combo, sin sumar de más ──
