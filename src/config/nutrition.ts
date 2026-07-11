@@ -209,7 +209,7 @@ export const RECIPES: Recipe[] = [
       'Armar el bowl: arroz abajo, pollo y verduras arriba',
       'Salsa criolla y aceite en crudo recién al momento de comer',
     ],
-    macros: { kcal: 690, protein: 71, carbs: 81, fat: 15 },
+    macros: { kcal: 800, protein: 71, carbs: 82, fat: 18 },
   },
   {
     name: 'Bowl limón y orégano',
@@ -222,7 +222,7 @@ export const RECIPES: Recipe[] = [
       'Mezclar todo en el tupper',
       'Limón, orégano y aceite al comer — va bien frío si no hay microondas',
     ],
-    macros: { kcal: 690, protein: 71, carbs: 81, fat: 15 },
+    macros: { kcal: 800, protein: 71, carbs: 82, fat: 18 },
   },
   {
     name: 'Ensalada de atún y papa',
@@ -235,7 +235,7 @@ export const RECIPES: Recipe[] = [
       'Huevo duro en cuartos arriba (suma ~6 g de proteína extra)',
       'Vinagre, pimienta y aceite en crudo al servir',
     ],
-    macros: { kcal: 530, protein: 44, carbs: 48, fat: 16 },
+    macros: { kcal: 572, protein: 48, carbs: 57, fat: 17 },
   },
   {
     name: 'Pollo a la mostaza',
@@ -248,7 +248,7 @@ export const RECIPES: Recipe[] = [
       'Calentar pollo, papa y verduras en microondas',
       'Salsa por arriba y aceite en crudo al final',
     ],
-    macros: { kcal: 556, protein: 68.5, carbs: 54, fat: 14 },
+    macros: { kcal: 669, protein: 68, carbs: 56, fat: 18 },
   },
   {
     name: 'Arroz salteado',
@@ -261,7 +261,7 @@ export const RECIPES: Recipe[] = [
       'Sumar pollo y arroz hasta que tome calor y un poco de dorado',
       'Apagar, mezclar el huevo picado y las especias, aceite en crudo al servir',
     ],
-    macros: { kcal: 775, protein: 78, carbs: 82, fat: 21 },
+    macros: { kcal: 885, protein: 78, carbs: 82, fat: 24 },
   },
   {
     name: 'Merluza al limón con puré',
@@ -274,7 +274,7 @@ export const RECIPES: Recipe[] = [
       'Calentar la merluza con provenzal (microondas o sartén sin aceite)',
       'Limón por arriba y ensalada de ½ plato al lado',
     ],
-    macros: { kcal: 470, protein: 42, carbs: 38, fat: 12 },
+    macros: { kcal: 472, protein: 49, carbs: 40, fat: 13 },
   },
   {
     name: 'Carne al chimichurri',
@@ -287,7 +287,7 @@ export const RECIPES: Recipe[] = [
       'Calentar carne y papa',
       'Chimichurri por arriba, ensalada de ½ plato',
     ],
-    macros: { kcal: 600, protein: 53.5, carbs: 45, fat: 18 },
+    macros: { kcal: 599, protein: 63, carbs: 38, fat: 21 },
   },
   {
     name: 'Wok especiado',
@@ -300,7 +300,7 @@ export const RECIPES: Recipe[] = [
       'Especias al final para que no se quemen',
       'Aceite en crudo al servir',
     ],
-    macros: { kcal: 725, protein: 72, carbs: 88, fat: 15 },
+    macros: { kcal: 818, protein: 71, carbs: 85, fat: 18 },
   },
   {
     name: 'Ensalada tibia de batata y atún',
@@ -313,7 +313,7 @@ export const RECIPES: Recipe[] = [
       'Mezclar mostaza + vinagre + aceite → vinagreta',
       'Todo al bowl, vinagreta por arriba',
     ],
-    macros: { kcal: 436, protein: 34, carbs: 40, fat: 10 },
+    macros: { kcal: 423, protein: 40, carbs: 42, fat: 11 },
   },
 
   // ── Desayuno (~650 kcal / 35 g P) ──
@@ -328,7 +328,7 @@ export const RECIPES: Recipe[] = [
       'Cocinar en sartén antiadherente sin aceite, tipo panqueque, dorando de los dos lados',
       'Servir con la banana en rodajas arriba y canela si querés',
     ],
-    macros: { kcal: 603, protein: 36, carbs: 56, fat: 27 },
+    macros: { kcal: 599, protein: 34, carbs: 57, fat: 26 },
   },
   {
     name: 'Panqueques de banana con whey',
@@ -341,7 +341,7 @@ export const RECIPES: Recipe[] = [
       'Cocinar en sartén antiadherente sin aceite, panqueques chicos',
       'Whey batido aparte con agua o leche descremada',
     ],
-    macros: { kcal: 589, protein: 47, carbs: 60, fat: 20 },
+    macros: { kcal: 592, protein: 48, carbs: 58, fat: 20 },
   },
   {
     name: 'Tostadas con palta y huevo poché',
@@ -354,7 +354,7 @@ export const RECIPES: Recipe[] = [
       'Tostar el pan, untar con el queso',
       'Palta pisada o en láminas arriba, huevo poché encima, sal y pimienta',
     ],
-    macros: { kcal: 597, protein: 34, carbs: 49, fat: 28 },
+    macros: { kcal: 597, protein: 34, carbs: 48, fat: 29 },
   },
   {
     name: 'Yogur con frutos secos y whey',
@@ -367,7 +367,7 @@ export const RECIPES: Recipe[] = [
       'Sumar los frutos secos y la banana en rodajas',
       'Las tostadas aparte, simples o con lo que quede de queso untable',
     ],
-    macros: { kcal: 633, protein: 48, carbs: 69, fat: 20 },
+    macros: { kcal: 636, protein: 49, carbs: 68, fat: 20 },
   },
   {
     name: 'Bowl de yogur con avena tostada',
@@ -380,7 +380,7 @@ export const RECIPES: Recipe[] = [
       'Mezclar el whey con el yogur',
       'Sumar la avena tostada, la manzana en cubos y los frutos secos arriba',
     ],
-    macros: { kcal: 540, protein: 34, carbs: 60, fat: 19.5 },
+    macros: { kcal: 536, protein: 34, carbs: 60, fat: 20 },
   },
 
   // ── Almuerzo (~700 kcal / 50 g P) ──
@@ -395,7 +395,7 @@ export const RECIPES: Recipe[] = [
       'Sumar el arroz, jengibre y un chorrito de soja, saltear 2-3 min',
       'Aceite en crudo al servir',
     ],
-    macros: { kcal: 705, protein: 72, carbs: 82, fat: 15 },
+    macros: { kcal: 818, protein: 71, carbs: 85, fat: 18 },
   },
   {
     name: 'Merluza con papas y huevo',
@@ -408,7 +408,7 @@ export const RECIPES: Recipe[] = [
       'Calentar la merluza (microondas o sartén sin aceite)',
       'Armar el plato con el huevo duro en cuartos, ensalada y aceite en crudo',
     ],
-    macros: { kcal: 690, protein: 51, carbs: 68, fat: 18 },
+    macros: { kcal: 643, protein: 58, carbs: 61, fat: 19 },
   },
   {
     name: 'Cuadrada al chimichurri con batata',
@@ -421,7 +421,7 @@ export const RECIPES: Recipe[] = [
       'Calentar la carne y la batata',
       'Chimichurri por arriba, ensalada al costado',
     ],
-    macros: { kcal: 678, protein: 54, carbs: 73, fat: 18 },
+    macros: { kcal: 665, protein: 64, carbs: 53, fat: 21 },
   },
   {
     name: 'Poke bowl de atún',
@@ -434,7 +434,7 @@ export const RECIPES: Recipe[] = [
       'Atún escurrido, huevo en cuartos, palta y vegetales frescos arriba',
       'Limón y aceite en crudo al servir',
     ],
-    macros: { kcal: 675, protein: 53, carbs: 66, fat: 19 },
+    macros: { kcal: 697, protein: 60, carbs: 69, fat: 20 },
   },
   {
     name: 'Pollo al curry seco',
@@ -447,7 +447,7 @@ export const RECIPES: Recipe[] = [
       'Sumar el arroz y las verduras, mezclar bien',
       'Aceite en crudo al servir',
     ],
-    macros: { kcal: 700, protein: 72, carbs: 83, fat: 15.5 },
+    macros: { kcal: 773, protein: 71, carbs: 73, fat: 20 },
   },
   {
     name: 'Ensalada tibia de pollo y batata',
@@ -460,7 +460,7 @@ export const RECIPES: Recipe[] = [
       'Sumar el huevo duro en cuartos y las hojas verdes',
       'Aceite en crudo al servir',
     ],
-    macros: { kcal: 635, protein: 72, carbs: 56, fat: 20 },
+    macros: { kcal: 695, protein: 72, carbs: 45, fat: 23 },
   },
   {
     name: 'Bowl de arroz, pollo y huevo',
@@ -473,7 +473,7 @@ export const RECIPES: Recipe[] = [
       'Revolver los huevos en sartén antiadherente sin aceite',
       'Servir todo junto, la banana aparte de postre si querés',
     ],
-    macros: { kcal: 582, protein: 50, carbs: 70, fat: 15 },
+    macros: { kcal: 637, protein: 50, carbs: 71, fat: 16 },
   },
 
   // ── Merienda (~450 kcal / 30 g P) — un solo combo, sin sumar de más ──
@@ -487,7 +487,7 @@ export const RECIPES: Recipe[] = [
       'Licuar todo junto hasta que quede cremoso',
       'Tomar frío, ideal post-cardio',
     ],
-    macros: { kcal: 375, protein: 36, carbs: 54, fat: 4 },
+    macros: { kcal: 376, protein: 36, carbs: 52, fat: 4 },
   },
   {
     name: 'Tostadas con atún',
@@ -500,7 +500,7 @@ export const RECIPES: Recipe[] = [
       'Atún escurrido encima con tomate y una pizca de sal',
       'Banana aparte',
     ],
-    macros: { kcal: 392, protein: 29, carbs: 58, fat: 3 },
+    macros: { kcal: 405, protein: 33, carbs: 62, fat: 4 },
   },
   {
     name: 'Tostadas con jamón y queso',
@@ -512,7 +512,7 @@ export const RECIPES: Recipe[] = [
       'Tostar el pan, armar el sándwich con jamón y queso',
       'La manzana entera aparte',
     ],
-    macros: { kcal: 396, protein: 28, carbs: 55, fat: 8 },
+    macros: { kcal: 386, protein: 25, carbs: 54, fat: 9 },
   },
   {
     name: 'Yogur con frutos rojos',
@@ -524,7 +524,7 @@ export const RECIPES: Recipe[] = [
       'Mezclar el yogur con el whey hasta disolver',
       'Sumar las frutillas cortadas, la banana en rodajas y los frutos secos',
     ],
-    macros: { kcal: 482, protein: 31, carbs: 55, fat: 18 },
+    macros: { kcal: 483, protein: 32, carbs: 54, fat: 18 },
   },
   {
     name: 'Wrap de pavita',
@@ -537,7 +537,7 @@ export const RECIPES: Recipe[] = [
       'Enrollar y cortar al medio',
       'Mandarina y frutos secos aparte',
     ],
-    macros: { kcal: 424, protein: 28, carbs: 42, fat: 16.5 },
+    macros: { kcal: 442, protein: 28, carbs: 46, fat: 17 },
   },
   {
     name: 'Queso magro con jamón y pera',
@@ -549,7 +549,7 @@ export const RECIPES: Recipe[] = [
       'Tostar el pan, armar con el queso y el jamón',
       'La pera entera aparte',
     ],
-    macros: { kcal: 387, protein: 34, carbs: 48, fat: 7 },
+    macros: { kcal: 419, protein: 30, carbs: 49, fat: 12 },
   },
   {
     name: 'Chocolatada proteica',
@@ -561,7 +561,7 @@ export const RECIPES: Recipe[] = [
       'Licuar todo junto',
       'Opción liviana — ideal si el resto del día viene arriba en calorías',
     ],
-    macros: { kcal: 330, protein: 35, carbs: 45, fat: 2.6 },
+    macros: { kcal: 332, protein: 36, carbs: 43, fat: 3 },
   },
 
   // ── Cena (~550 kcal / 50 g P) ──
@@ -576,7 +576,7 @@ export const RECIPES: Recipe[] = [
       'Calentar la merluza con limón (microondas o sartén sin aceite)',
       'Servir con las verduras al vapor',
     ],
-    macros: { kcal: 563, protein: 50, carbs: 58, fat: 12.5 },
+    macros: { kcal: 543, protein: 61, carbs: 44, fat: 14 },
   },
   {
     name: 'Cuadrada al chimichurri con arroz',
@@ -589,7 +589,7 @@ export const RECIPES: Recipe[] = [
       'Calentar la carne y el arroz',
       'Chimichurri por arriba, ensalada al costado',
     ],
-    macros: { kcal: 565, protein: 54, carbs: 48, fat: 13.5 },
+    macros: { kcal: 587, protein: 64, carbs: 42, fat: 16 },
   },
   {
     name: 'Tortilla de atún y papa',
@@ -602,7 +602,7 @@ export const RECIPES: Recipe[] = [
       'Batir los huevos con el atún escurrido y la papa',
       'Cuajar en sartén antiadherente sin aceite, aceite en crudo al servir',
     ],
-    macros: { kcal: 575, protein: 50, carbs: 39, fat: 22 },
+    macros: { kcal: 614, protein: 55, carbs: 48, fat: 23 },
   },
   {
     name: 'Wok liviano de pollo',
@@ -615,7 +615,7 @@ export const RECIPES: Recipe[] = [
       'Sumar el arroz, mezclar 2-3 min',
       'Aceite en crudo al servir',
     ],
-    macros: { kcal: 540, protein: 53.5, carbs: 60, fat: 14 },
+    macros: { kcal: 606, protein: 53, carbs: 57, fat: 16 },
   },
   {
     name: 'Ensalada fría de huevo y pollo',
@@ -628,7 +628,7 @@ export const RECIPES: Recipe[] = [
       'Sumar huevo en cuartos, pollo y jamón',
       'Hojas verdes y vinagreta o aceite en crudo',
     ],
-    macros: { kcal: 547, protein: 45, carbs: 40, fat: 19 },
+    macros: { kcal: 530, protein: 43, carbs: 42, fat: 20 },
   },
   {
     name: 'Pollo a la plancha con ensalada de garbanzos',
@@ -641,7 +641,7 @@ export const RECIPES: Recipe[] = [
       'Garbanzos con hojas verdes y tomate',
       'Aceite en crudo al servir',
     ],
-    macros: { kcal: 596, protein: 75, carbs: 47, fat: 18 },
+    macros: { kcal: 666, protein: 75, carbs: 41, fat: 21 },
   },
 ]
 
