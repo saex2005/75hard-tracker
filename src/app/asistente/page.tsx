@@ -1,9 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { cn } from '@/lib/utils'
+import { cn, todayART, yesterdayART } from '@/lib/utils'
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string; created_at?: string }
+type MenuState = { index: number; x: number; y: number } | null
 
 // "Nueva charla" no borra nada del server (memoria constante) — solo oculta
 // los mensajes anteriores a este cutoff en la vista de este dispositivo.
@@ -16,15 +17,40 @@ const SUGGESTIONS = [
   '¿Cómo vengo con los macros?',
 ]
 
+// Fecha ART (mismo offset fijo -3h que el resto de la app) para agrupar por día
+function dayKey(iso?: string): string {
+  const ms = iso ? new Date(iso).getTime() : Date.now()
+  return new Date(ms - 3 * 3600 * 1000).toISOString().split('T')[0]
+}
+
+function timeLabel(iso?: string): string {
+  const d = iso ? new Date(iso) : new Date()
+  return d.toLocaleTimeString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour: '2-digit', minute: '2-digit' })
+}
+
+function dateLabel(iso?: string): string {
+  const key = dayKey(iso)
+  if (key === todayART()) return 'Hoy'
+  if (key === yesterdayART()) return 'Ayer'
+  const d = iso ? new Date(iso) : new Date()
+  return d.toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', day: 'numeric', month: 'long' })
+}
+
 export default function AsistentePage() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loaded, setLoaded] = useState(false)
+  const [showScrollBtn, setShowScrollBtn] = useState(false)
+  const [menu, setMenu] = useState<MenuState>(null)
+
   const bottomRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const atBottomRef = useRef(true)
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Auto-grow del textarea (estilo iMessage/WhatsApp) — máximo ~6 líneas, después scroll interno
   useEffect(() => {
@@ -56,9 +82,31 @@ export default function AsistentePage() {
     }
   }, [])
 
+  // Auto-scroll solo si ya estabas al fondo (como WhatsApp) — si scrolleaste
+  // para arriba a leer historial, no te saca de ahí cuando llega una respuesta.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (atBottomRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+      setShowScrollBtn(false)
+    } else if (messages.length > 0) {
+      setShowScrollBtn(true)
+    }
   }, [messages, streaming])
+
+  function handleScroll() {
+    const el = containerRef.current
+    if (!el) return
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight
+    const atBottom = distance < 80
+    atBottomRef.current = atBottom
+    setShowScrollBtn(!atBottom)
+  }
+
+  function scrollToBottom() {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    atBottomRef.current = true
+    setShowScrollBtn(false)
+  }
 
   const send = useCallback(
     async (text: string) => {
@@ -66,7 +114,9 @@ export default function AsistentePage() {
       if (!content || streaming) return
       setError(null)
       setInput('')
-      setMessages((prev) => [...prev, { role: 'user', content }])
+      // Al enviar, siempre bajás al fondo — igual que WhatsApp
+      atBottomRef.current = true
+      setMessages((prev) => [...prev, { role: 'user', content, created_at: new Date().toISOString() }])
       setStreaming(true)
 
       const controller = new AbortController()
@@ -84,7 +134,7 @@ export default function AsistentePage() {
           throw new Error(data?.error || `Error ${res.status}`)
         }
 
-        setMessages((prev) => [...prev, { role: 'assistant', content: '' }])
+        setMessages((prev) => [...prev, { role: 'assistant', content: '', created_at: new Date().toISOString() }])
         const reader = res.body.getReader()
         const decoder = new TextDecoder()
         while (true) {
@@ -94,7 +144,7 @@ export default function AsistentePage() {
           setMessages((prev) => {
             const next = [...prev]
             next[next.length - 1] = {
-              role: 'assistant',
+              ...next[next.length - 1],
               content: next[next.length - 1].content + delta,
             }
             return next
@@ -126,6 +176,34 @@ export default function AsistentePage() {
     } catch {}
   }
 
+  // Copiar mensaje — mantener apretado (mobile) o click derecho (desktop),
+  // igual que el menú de "Copiar / Reenviar / Eliminar" de WhatsApp. Acá solo
+  // aplica Copiar: no hay hilos, contactos ni chats para reenviar/responder.
+  function openMenu(index: number, x: number, y: number) {
+    if (navigator.vibrate) navigator.vibrate(10)
+    setMenu({ index, x, y })
+  }
+
+  function startLongPress(index: number, e: React.TouchEvent) {
+    const touch = e.touches[0]
+    const x = touch.clientX
+    const y = touch.clientY
+    longPressTimer.current = setTimeout(() => openMenu(index, x, y), 450)
+  }
+
+  function cancelLongPress() {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+  }
+
+  function copyMessage(index: number) {
+    const text = messages[index]?.content
+    if (text) navigator.clipboard?.writeText(text).catch(() => {})
+    setMenu(null)
+  }
+
   return (
     <main className="max-w-md mx-auto flex flex-col h-dvh pb-16">
       {/* Header */}
@@ -145,7 +223,7 @@ export default function AsistentePage() {
       </div>
 
       {/* Mensajes */}
-      <div className="flex-1 overflow-y-auto px-4 space-y-3 pb-3">
+      <div ref={containerRef} onScroll={handleScroll} className="relative flex-1 overflow-y-auto px-4 pb-3">
         {messages.length === 0 && loaded && (
           <div className="pt-8 space-y-2">
             <p className="text-sm text-[#52525B] font-medium text-center mb-4">
@@ -163,33 +241,99 @@ export default function AsistentePage() {
           </div>
         )}
 
-        {messages.map((m, i) => (
-          <div
-            key={i}
-            className={cn(
-              'max-w-[85%] rounded-2xl px-4 py-2.5 text-sm font-medium whitespace-pre-wrap break-words',
-              m.role === 'user'
-                ? 'ml-auto bg-accent text-black rounded-br-md'
-                : 'mr-auto bg-[#141414] border border-[#262626] text-[#E4E4E7] rounded-bl-md'
-            )}
-          >
-            {m.content || (
-              <span className="inline-flex gap-1 py-1" aria-label="Pensando">
-                <Dot delay="0ms" />
-                <Dot delay="150ms" />
-                <Dot delay="300ms" />
-              </span>
-            )}
-          </div>
-        ))}
+        {messages.map((m, i) => {
+          const prev = messages[i - 1]
+          const next = messages[i + 1]
+          const newDay = !prev || dayKey(m.created_at) !== dayKey(prev.created_at)
+          const isFirstOfGroup = newDay || prev.role !== m.role
+          const isLastOfGroup = !next || next.role !== m.role || dayKey(next.created_at) !== dayKey(m.created_at)
+
+          return (
+            <div key={i}>
+              {newDay && (
+                <div className="flex justify-center my-3">
+                  <span className="text-[11px] font-semibold text-[#52525B] bg-[#141414] border border-[#262626] rounded-full px-3 py-1">
+                    {dateLabel(m.created_at)}
+                  </span>
+                </div>
+              )}
+              <div className={cn('flex flex-col', m.role === 'user' ? 'items-end' : 'items-start', isFirstOfGroup ? 'mt-3' : 'mt-0.5')}>
+                <div
+                  onContextMenu={(e) => {
+                    e.preventDefault()
+                    openMenu(i, e.clientX, e.clientY)
+                  }}
+                  onTouchStart={(e) => startLongPress(i, e)}
+                  onTouchEnd={cancelLongPress}
+                  onTouchMove={cancelLongPress}
+                  className={cn(
+                    'max-w-[85%] rounded-2xl px-4 py-2.5 text-sm font-medium whitespace-pre-wrap break-words select-text',
+                    m.role === 'user'
+                      ? cn('bg-accent text-black', isLastOfGroup && 'rounded-br-md')
+                      : cn('bg-[#141414] border border-[#262626] text-[#E4E4E7]', isLastOfGroup && 'rounded-bl-md')
+                  )}
+                >
+                  {m.content || (
+                    <span className="inline-flex gap-1 py-1" aria-label="Pensando">
+                      <Dot delay="0ms" />
+                      <Dot delay="150ms" />
+                      <Dot delay="300ms" />
+                    </span>
+                  )}
+                </div>
+                {isLastOfGroup && m.content && (
+                  <span className="text-[10px] font-mono text-[#3F3F46] mt-1 px-1">{timeLabel(m.created_at)}</span>
+                )}
+              </div>
+            </div>
+          )
+        })}
 
         {error && (
-          <div className="bg-[#1A0A0A] border border-red-500/20 rounded-xl px-4 py-3">
+          <div className="bg-[#1A0A0A] border border-red-500/20 rounded-xl px-4 py-3 mt-3">
             <p className="text-xs text-red-500 font-medium">{error}</p>
           </div>
         )}
         <div ref={bottomRef} />
+
+        {/* Volver al fondo — aparece si scrolleaste para arriba, como en WhatsApp */}
+        {showScrollBtn && (
+          <button
+            onClick={scrollToBottom}
+            aria-label="Ir al último mensaje"
+            className="absolute bottom-3 right-3 h-9 w-9 rounded-full bg-[#141414] border border-[#262626] shadow-lg flex items-center justify-center active:scale-[0.95] transition-transform"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 5v14M12 19l-6-6M12 19l6-6" stroke="#A1A1AA" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        )}
       </div>
+
+      {/* Menú contextual — mantener apretado o click derecho sobre un mensaje */}
+      {menu && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setMenu(null)}
+            onTouchStart={() => setMenu(null)}
+          />
+          <div
+            className="fixed z-50 bg-[#1C1C1C] border border-[#262626] rounded-xl shadow-xl overflow-hidden"
+            style={{
+              left: Math.min(menu.x, (typeof window !== 'undefined' ? window.innerWidth : 400) - 170),
+              top: Math.max(menu.y - 48, 8),
+            }}
+          >
+            <button
+              onClick={() => copyMessage(menu.index)}
+              className="flex items-center gap-2 px-4 py-3 text-sm font-semibold text-[#FAFAFA] active:bg-[#262626] whitespace-nowrap w-full text-left"
+            >
+              Copiar mensaje
+            </button>
+          </div>
+        </>
+      )}
 
       {/* Input */}
       <form
