@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { DAILY_MACROS, MEALS, MEAL_PREP, SHOPPING_LIST, EMERGENCY_MEALS, QUICK_MEALS, RECIPES, SEASONINGS, RECIPE_RULES } from '@/config/nutrition'
+import type { Recipe } from '@/config/nutrition'
 import { cn, todayISO } from '@/lib/utils'
-import type { FoodLog } from '@/lib/supabase'
+import type { FoodLog, MealSlot } from '@/lib/supabase'
 import MacroBars from '@/components/MacroBars'
 import FoodSearch, { type NewLogEntry } from '@/components/FoodSearch'
 import FoodLogList from '@/components/FoodLogList'
@@ -325,9 +326,42 @@ function TabMealPrep() {
 const RECIPE_FILTERS = ['Todas', 'Desayuno', 'Almuerzo', 'Merienda', 'Cena'] as const
 type RecipeFilter = (typeof RECIPE_FILTERS)[number]
 
+// Qué meal slot(s) del tracker corresponden a cada receta. Las 9 originales
+// "Almuerzo o cena" ofrecen los dos botones — el resto es 1 a 1.
+const MEAL_SLOTS: Record<string, MealSlot[]> = {
+  Desayuno: ['desayuno'],
+  Almuerzo: ['almuerzo'],
+  Merienda: ['merienda'],
+  Cena: ['cena'],
+  'Almuerzo o cena': ['almuerzo', 'cena'],
+}
+const MEAL_SLOT_LABEL: Record<MealSlot, string> = {
+  desayuno: 'Desayuno',
+  almuerzo: 'Almuerzo',
+  merienda: 'Merienda',
+  cena: 'Cena',
+  extra: 'Extra',
+}
+
 function TabRecetas() {
   const [filter, setFilter] = useState<RecipeFilter>('Todas')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [loggedToday, setLoggedToday] = useState<Set<string>>(new Set())
+  const [pending, setPending] = useState<Set<string>>(new Set())
+  const date = todayISO()
+
+  useEffect(() => {
+    let cancelled = false
+    fetch(`/api/food-log?date=${date}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: FoodLog[]) => {
+        if (!cancelled) setLoggedToday(new Set(data.map((e) => `${e.meal}:${e.food_name}`)))
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [date])
 
   const toggle = (name: string) => {
     setExpanded((prev) => {
@@ -336,6 +370,41 @@ function TabRecetas() {
       return next
     })
   }
+
+  const registrar = useCallback(
+    async (recipe: Recipe, meal: MealSlot) => {
+      const key = `${meal}:${recipe.name}`
+      setPending((prev) => new Set(prev).add(key))
+      try {
+        const res = await fetch('/api/food-log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            date,
+            meal,
+            food_id: null,
+            food_name: recipe.name,
+            grams: 1, // la receta se registra como comida completa, no por gramaje
+            kcal: recipe.macros.kcal,
+            protein: recipe.macros.protein,
+            carbs: recipe.macros.carbs,
+            fat: recipe.macros.fat,
+          }),
+        })
+        if (!res.ok) throw new Error()
+        setLoggedToday((prev) => new Set(prev).add(key))
+      } catch {
+        // se puede reintentar tocando el botón de nuevo
+      } finally {
+        setPending((prev) => {
+          const next = new Set(prev)
+          next.delete(key)
+          return next
+        })
+      }
+    },
+    [date]
+  )
 
   const visible = filter === 'Todas' ? RECIPES : RECIPES.filter((r) => r.meal.includes(filter))
 
@@ -365,28 +434,55 @@ function TabRecetas() {
 
       {visible.map((recipe) => {
         const isOpen = expanded.has(recipe.name)
+        const slots = MEAL_SLOTS[recipe.meal] ?? ['extra']
         return (
           <div key={recipe.name} className="bg-[#141414] border border-[#262626] rounded-xl overflow-hidden">
-            {/* Header — siempre visible, toca para expandir */}
-            <button
-              onClick={() => toggle(recipe.name)}
-              className="w-full flex items-start justify-between p-4 text-left"
-            >
-              <div className="min-w-0 flex-1">
+            {/* Header — toca el texto para expandir, los botones registran */}
+            <div className="flex items-start justify-between gap-2 p-4">
+              <button onClick={() => toggle(recipe.name)} className="min-w-0 flex-1 text-left">
                 <p className="text-base font-bold">{recipe.name}</p>
                 <div className="flex items-center gap-2 mt-1">
                   <p className="text-xs text-accent font-semibold">{recipe.meal}</p>
                   <span className="text-[#3F3F46]">·</span>
                   <p className="text-[11px] font-mono text-[#52525B]">{recipe.time}</p>
+                  <span className={cn('text-[#52525B] text-sm transition-transform duration-150', isOpen && 'rotate-45')}>
+                    +
+                  </span>
                 </div>
                 <p className="text-[11px] font-mono text-[#71717A] mt-1.5">
                   {recipe.macros.kcal} kcal · {recipe.macros.protein}P · {recipe.macros.carbs}C · {recipe.macros.fat}G
                 </p>
+              </button>
+
+              <div className="flex flex-col gap-1.5 shrink-0">
+                {slots.map((meal) => {
+                  const key = `${meal}:${recipe.name}`
+                  const done = loggedToday.has(key)
+                  const isPending = pending.has(key)
+                  return (
+                    <button
+                      key={meal}
+                      onClick={() => !done && !isPending && registrar(recipe, meal)}
+                      disabled={done || isPending}
+                      className={cn(
+                        'h-8 px-3 rounded-lg text-[11px] font-semibold whitespace-nowrap border transition-colors duration-150',
+                        done
+                          ? 'border-green-500/30 bg-green-500/5 text-green-500'
+                          : 'border-[#262626] bg-[#0A0A0A] text-[#A1A1AA] active:scale-[0.97]'
+                      )}
+                    >
+                      {done
+                        ? `${slots.length > 1 ? MEAL_SLOT_LABEL[meal] + ' ' : ''}✓`
+                        : isPending
+                          ? '...'
+                          : slots.length > 1
+                            ? `+ ${MEAL_SLOT_LABEL[meal]}`
+                            : '+ Registrar'}
+                    </button>
+                  )
+                })}
               </div>
-              <span className={cn('text-[#52525B] text-lg shrink-0 ml-3 transition-transform duration-150', isOpen && 'rotate-45')}>
-                +
-              </span>
-            </button>
+            </div>
 
             {isOpen && (
               <div className="px-4 pb-4">
