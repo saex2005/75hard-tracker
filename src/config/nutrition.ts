@@ -330,7 +330,7 @@ export const RECIPES: Recipe[] = [
     batch: ['150 g de carne picada magra cocida'],
     extras: [
       '1 pan árabe casero (90 g) o Coaz',
-      '20 g de queso port salut light',
+      '20 g de queso port salut (real, marca comprada — verificado en etiqueta: 310kcal/20P/1C/24G cada 100g)',
       'Lechuga, tomate y cebolla',
       '10 g de mostaza Savora (0 g azúcar añadida, verificado en etiqueta)',
     ],
@@ -340,7 +340,7 @@ export const RECIPES: Recipe[] = [
       'Armar con el queso, la carne y los vegetales crudos, mostaza al servir',
       'Para almuerzo: sumale 1 banana (150 g) de postre y llegás a las ~700 kcal',
     ],
-    macros: { kcal: 605, protein: 53, carbs: 46, fat: 22 },
+    macros: { kcal: 622, protein: 52, carbs: 46, fat: 24 },
   },
   {
     name: 'Milanesa napolitana al horno',
@@ -352,7 +352,7 @@ export const RECIPES: Recipe[] = [
       '1 huevo batido (para embarrar)',
       'Rocío vegetal',
       '40 g de puré de tomate',
-      '30 g de queso port salut light',
+      '30 g de queso port salut (real, marca comprada)',
       '30 g de jamón cocido',
     ],
     steps: [
@@ -361,7 +361,7 @@ export const RECIPES: Recipe[] = [
       'Dar vuelta, cubrir con puré de tomate, jamón y queso, 10 min más hasta gratinar',
       'La más alta en proteína del grupo — para almuerzo sumale 1 banana (150 g) de postre',
     ],
-    macros: { kcal: 537, protein: 76, carbs: 22, fat: 15 },
+    macros: { kcal: 563, protein: 74, carbs: 22, fat: 18 },
   },
   {
     name: 'Tacos árabes (pan árabe como taco shell)',
@@ -389,7 +389,7 @@ export const RECIPES: Recipe[] = [
     extras: [
       'Batch de ñoquis: 500 g papa hervida + 150 g harina 000 + 1 huevo (rinde ~700 g, porción 200 g)',
       '60 g de puré de tomate',
-      '15 g de queso port salut light',
+      '15 g de queso port salut (real, marca comprada)',
     ],
     steps: [
       'Pisar la papa hervida, mezclar con la harina y el huevo hasta formar una masa lisa',
@@ -397,7 +397,7 @@ export const RECIPES: Recipe[] = [
       'Saltear el pollo con el puré de tomate, sumar los ñoquis y el queso',
       'El batch rinde varias porciones — freezar el resto crudo antes de hervir',
     ],
-    macros: { kcal: 584, protein: 60, carbs: 62, fat: 10 },
+    macros: { kcal: 597, protein: 59, carbs: 62, fat: 11 },
   },
   {
     name: 'Lasaña de zapallito (sin pasta)',
@@ -408,15 +408,15 @@ export const RECIPES: Recipe[] = [
       '250 g de zapallito en láminas finas',
       '100 g de ricota descremada',
       '60 g de puré de tomate',
-      '20 g de queso port salut light',
+      '20 g de queso port salut (real, marca comprada)',
     ],
     steps: [
       'Cortar el zapallito en láminas finas y salarlas 10 min para sacar agua',
       'Armar capas: zapallito, carne con puré de tomate, ricota — repetir',
       'Queso arriba, horno 200°C 20 min',
-      'La más baja en carbos del grupo — ideal si el día ya gastó el margen de carbos',
+      'La más baja en carbos del grupo, pero también la más alta en grasa (29g = 41% del objetivo diario) — ideal si el día ya gastó el margen de carbos y todavía tiene margen de grasa',
     ],
-    macros: { kcal: 560, protein: 61, carbs: 16, fat: 27 },
+    macros: { kcal: 577, protein: 60, carbs: 16, fat: 29 },
   },
   {
     name: 'Wrap shawarma (pan árabe casero)',
@@ -446,7 +446,7 @@ export const RECIPES: Recipe[] = [
     extras: [
       '1 pan árabe (120 g, Coaz o casero) entero, sin cortar',
       '70 g de pollo cocido, desmenuzado o en trozos chicos',
-      '57 g de queso port salut',
+      '57 g de queso port salut (real, marca comprada)',
       '40 g de puré de tomate sin azúcar agregada',
       '20 g de morrón y 20 g de cebolla, picados finos',
       '50 g de champiñones',
@@ -457,7 +457,7 @@ export const RECIPES: Recipe[] = [
       'Horno 200°C, 12-15 min hasta que funde el queso y dora el borde',
       'Receta real cargada el 11/07 — quedó rica y se repite tal cual',
     ],
-    macros: { kcal: 736, protein: 48, carbs: 93, fat: 20 },
+    macros: { kcal: 741, protein: 47, carbs: 93, fat: 20 },
   },
 
   // ── Desayuno (~650 kcal / 35 g P) ──
