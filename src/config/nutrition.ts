@@ -146,6 +146,8 @@ export const SHOPPING_LIST = [
       { name: 'Papa o batata', qty: '3 kg' },
       { name: 'Avena', qty: '1 kg' },
       { name: 'Pan integral', qty: '16 rebanadas (~480 g)' },
+      { name: 'Harina integral (pan árabe casero)', qty: '500 g' },
+      { name: 'Harina 000 (pan árabe casero)', qty: '500 g' },
     ],
   },
   {
@@ -173,7 +175,7 @@ export const SHOPPING_LIST = [
   {
     category: 'Grasas',
     items: [
-      { name: 'Aceite de oliva', qty: '~160 ml' },
+      { name: 'Aceite de oliva', qty: '~190 ml (160 + 30 para el pan árabe casero)' },
       { name: 'Palta', qty: '2-4 unidades' },
       { name: 'Frutos secos', qty: '200 g' },
     ],
@@ -181,6 +183,8 @@ export const SHOPPING_LIST = [
   {
     category: 'Extras',
     items: [
+      { name: 'Levadura seca instantánea (pan árabe casero)', qty: '2 sobres (14 g)' },
+      { name: 'Sal fina', qty: '10 g extra (pan árabe casero)' },
       { name: 'Café, canela, condimentos', qty: 'stock permanente' },
     ],
   },
