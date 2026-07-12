@@ -330,7 +330,7 @@ export const RECIPES: Recipe[] = [
     batch: ['150 g de carne picada magra cocida'],
     extras: [
       '1 pan árabe casero (90 g) o Coaz',
-      '20 g de queso port salut (real, marca comprada — verificado en etiqueta: 310kcal/20P/1C/24G cada 100g)',
+      '14 g de queso port salut (real, marca comprada — verificado en etiqueta: 310kcal/20P/1C/24G cada 100g; se ajustó de 20g a 14g para volver a entrar en el margen de cena)',
       'Lechuga, tomate y cebolla',
       '10 g de mostaza Savora (0 g azúcar añadida, verificado en etiqueta)',
     ],
@@ -338,9 +338,9 @@ export const RECIPES: Recipe[] = [
       'Formar la hamburguesa con la carne picada y cocinar a la plancha sin aceite',
       'Tostar el pan árabe apenas de los dos lados',
       'Armar con el queso, la carne y los vegetales crudos, mostaza al servir',
-      'Para almuerzo: sumale 1 banana (150 g) de postre y llegás a las ~700 kcal',
+      'Para almuerzo: sumale 1 banana (150 g) de postre y llegás a las ~737 kcal',
     ],
-    macros: { kcal: 622, protein: 52, carbs: 46, fat: 24 },
+    macros: { kcal: 603, protein: 51, carbs: 46, fat: 23 },
   },
   {
     name: 'Milanesa napolitana al horno',
@@ -444,8 +444,8 @@ export const RECIPES: Recipe[] = [
     time: '20 min',
     batch: [],
     extras: [
-      '1 pan árabe (120 g, Coaz o casero) entero, sin cortar',
-      '70 g de pollo cocido, desmenuzado o en trozos chicos',
+      '1 pan árabe (75 g, ¾ de uno de 100g) entero, sin cortar',
+      '80 g de pollo cocido, desmenuzado o en trozos chicos',
       '57 g de queso port salut (real, marca comprada)',
       '40 g de puré de tomate sin azúcar agregada',
       '20 g de morrón y 20 g de cebolla, picados finos',
@@ -455,9 +455,9 @@ export const RECIPES: Recipe[] = [
     steps: [
       'Salsa de tomate sobre el pan árabe entero, pollo desmenuzado y verduras encima, queso al final',
       'Horno 200°C, 12-15 min hasta que funde el queso y dora el borde',
-      'Receta real cargada el 11/07 — quedó rica y se repite tal cual',
+      'Basada en la receta real del 11/07 (que usaba 120g de pan y 70g de pollo, ~741 kcal) — se ajustó pan y pollo para volver a entrar en el margen de cena sin perder proteína',
     ],
-    macros: { kcal: 741, protein: 47, carbs: 93, fat: 20 },
+    macros: { kcal: 604, protein: 46, carbs: 61, fat: 19 },
   },
 
   // ── Desayuno (~650 kcal / 35 g P) ──
