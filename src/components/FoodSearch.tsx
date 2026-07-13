@@ -52,6 +52,7 @@ export default function FoodSearch({ onAdd }: { onAdd: (entry: NewLogEntry) => v
   const [grams, setGrams] = useState<number>(100)
   const [meal, setMeal] = useState<MealSlot>(defaultMealByHour())
   const [showCreate, setShowCreate] = useState(false)
+  const [recentsOpen, setRecentsOpen] = useState(false)
   const [scanning, setScanning] = useState(false)
   const [scanLookup, setScanLookup] = useState(false)
   const [prefillFromScan, setPrefillFromScan] = useState<{
@@ -201,31 +202,47 @@ export default function FoodSearch({ onAdd }: { onAdd: (entry: NewLogEntry) => v
         <p className="text-xs text-[#52525B] font-medium text-center">Buscando el producto…</p>
       )}
 
-      {/* Recientes — visibles solo sin búsqueda activa */}
+      {/* Recientes — visibles solo sin búsqueda activa, colapsado por default */}
       {!selected && query.trim().length < 2 && recents.length > 0 && (
         <div>
-          <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#52525B] mb-2">
-            Recientes
-          </p>
-          <div className="space-y-1.5">
-            {recents.map((food) => (
-              <button
-                key={food.id}
-                onClick={() => selectFood(food)}
-                className="w-full bg-[#141414] border border-[#262626] rounded-xl px-3 py-2.5 flex items-center gap-3 text-left active:scale-[0.98] transition-transform"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate">{food.name}</p>
-                  {food.brand && (
-                    <p className="text-xs text-[#52525B] font-medium truncate">{food.brand}</p>
-                  )}
-                </div>
-                <p className="text-xs font-mono tabular-nums text-[#52525B] shrink-0">
-                  {Math.round(food.kcal_100)} kcal · {food.protein_100}P
-                </p>
-              </button>
-            ))}
-          </div>
+          <button
+            onClick={() => setRecentsOpen((v) => !v)}
+            className="w-full flex items-center justify-between mb-2"
+          >
+            <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#52525B]">
+              Recientes
+            </p>
+            <svg
+              viewBox="0 0 24 24"
+              className={cn('h-3.5 w-3.5 text-[#52525B] transition-transform', recentsOpen && 'rotate-180')}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+            >
+              <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          {recentsOpen && (
+            <div className="space-y-1.5">
+              {recents.map((food) => (
+                <button
+                  key={food.id}
+                  onClick={() => selectFood(food)}
+                  className="w-full bg-[#141414] border border-[#262626] rounded-xl px-3 py-2.5 flex items-center gap-3 text-left active:scale-[0.98] transition-transform"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{food.name}</p>
+                    {food.brand && (
+                      <p className="text-xs text-[#52525B] font-medium truncate">{food.brand}</p>
+                    )}
+                  </div>
+                  <p className="text-xs font-mono tabular-nums text-[#52525B] shrink-0">
+                    {Math.round(food.kcal_100)} kcal · {food.protein_100}P
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
