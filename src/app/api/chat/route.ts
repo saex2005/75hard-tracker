@@ -1,14 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { createClient } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { todayART, dayNumberFor } from '@/lib/utils'
-import { ASSISTANT_SYSTEM_PROMPT } from '@/lib/assistant-context'
+import { buildSystemPrompt } from '@/lib/assistant-context'
 import { AUTH_COOKIE, isValidToken } from '@/lib/auth'
 import { CHALLENGE_CONFIG, BOTTLES_PER_DAY } from '@/config/challenge'
 import { DAILY_MACROS } from '@/config/nutrition'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
+
+// gym_logs no está en el tipo Database de @/lib/supabase (tabla nueva) — cliente sin genérico,
+// mismo patrón que /api/gym-log/route.ts hasta que se regeneren los tipos.
+const supabaseUntyped = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 const CONTEXT_MESSAGES = 30 // últimos mensajes de la DB que entran como contexto
 const UI_MESSAGES = 50 // mensajes que devuelve el GET para renderizar
@@ -40,6 +48,18 @@ const TOOLS: Anthropic.Tool[] = [
       type: 'object',
       properties: { fecha: { type: 'string', description: 'Fecha en formato YYYY-MM-DD' } },
       required: ['fecha'],
+    },
+  },
+  {
+    name: 'consultar_gym',
+    description:
+      'Sets registrados en el gym: fecha, sesión (torso/piernas/empujes/traccion), ejercicio, peso y repeticiones por serie. Usar para hablar de progresión real, comparar con la sesión anterior del mismo ejercicio, o resumir qué entrenó en un rango de fechas.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        ejercicio: { type: 'string', description: 'Filtrar por nombre de ejercicio (opcional, texto parcial)' },
+        limit: { type: 'number', description: 'Cantidad de sets hacia atrás a traer (default 40, máximo 200)' },
+      },
     },
   },
   {
@@ -121,6 +141,20 @@ async function runTool(name: string, input: Record<string, unknown>): Promise<st
           { kcal: 0, p: 0, c: 0, g: 0 }
         )
         return JSON.stringify({ fecha, comidas: logs, totales: totals })
+      }
+      case 'consultar_gym': {
+        const limit = Math.min(Math.max(Number(input.limit) || 40, 1), 200)
+        let query = supabaseUntyped
+          .from('gym_logs')
+          .select('date, session, exercise, set_num, weight, reps')
+          .order('date', { ascending: false })
+          .order('set_num', { ascending: true })
+          .limit(limit)
+        const ejercicio = String(input.ejercicio ?? '').trim()
+        if (ejercicio) query = query.ilike('exercise', `%${ejercicio.replace(/[%_]/g, '\\$&')}%`)
+        const { data, error } = await query
+        if (error) throw error
+        return JSON.stringify(data ?? [])
       }
       case 'buscar_conversaciones': {
         const query = String(input.query ?? '').trim()
@@ -294,6 +328,7 @@ export async function POST(req: NextRequest) {
 
   const client = new Anthropic({ apiKey })
   const encoder = new TextEncoder()
+  const systemPrompt = buildSystemPrompt()
 
   const readable = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -309,7 +344,7 @@ export async function POST(req: NextRequest) {
             output_config: { effort: 'medium' },
             system: [
               // Bloque estático cacheable — no tocar el orden: el breakpoint va acá
-              { type: 'text', text: ASSISTANT_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
+              { type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } },
               // Estado vivo — cambia por request, va después del breakpoint
               { type: 'text', text: liveState },
             ],
