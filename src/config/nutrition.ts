@@ -101,7 +101,7 @@ export const MEAL_PREP: MealPrepSession[] = [
       'Pollo y verduras al horno juntos: pollo 40 min, verduras 25-30 min',
       'Arroz y papa en paralelo en la hornalla',
       'Dividir en tuppers apenas termina — cenar algo de la tanda',
-      'Pan árabe casero: suma ~1h15 (amasar + levar 45-60 min + hornear 240-250°C 4-6 min por lado) — hacelo cuando tengas el tiempo, no es parte del combo fijo. Macros provisionales (~245 kcal/8P/46C/3,3G cada 100g) hasta pesar el batch real y calibrar con las etiquetas de harina/levadura/aceite',
+      'Pan árabe casero: suma ~1h15 (amasar + levar 45-60 min + hornear 240-250°C 4-6 min por lado) — hacelo cuando tengas el tiempo, no es parte del combo fijo. Receta completa con procedimiento en la tab Recetas. Macros con tus etiquetas reales de harina y levadura (~250 kcal/6,2P/46,6C/3,3G cada 100g) — falta pesar el batch real (crudo vs. horneado) para el número definitivo',
     ],
   },
   {
@@ -330,7 +330,7 @@ export const RECIPES: Recipe[] = [
     batch: ['150 g de carne picada magra cocida'],
     extras: [
       '1 pan árabe casero (90 g) o Coaz',
-      '14 g de queso port salut (real, marca comprada — verificado en etiqueta: 310kcal/20P/1C/24G cada 100g; se ajustó de 20g a 14g para volver a entrar en el margen de cena)',
+      '13 g de queso port salut (real, marca comprada — verificado en etiqueta: 310kcal/20P/1C/24G cada 100g; ajustado para entrar en el margen de cena junto con el nuevo dato del pan)',
       'Lechuga, tomate y cebolla',
       '10 g de mostaza Savora (0 g azúcar añadida, verificado en etiqueta)',
     ],
@@ -338,9 +338,9 @@ export const RECIPES: Recipe[] = [
       'Formar la hamburguesa con la carne picada y cocinar a la plancha sin aceite',
       'Tostar el pan árabe apenas de los dos lados',
       'Armar con el queso, la carne y los vegetales crudos, mostaza al servir',
-      'Para almuerzo: sumale 1 banana (150 g) de postre y llegás a las ~737 kcal',
+      'Para almuerzo: sumale 1 banana (150 g) de postre y llegás a las ~739 kcal',
     ],
-    macros: { kcal: 603, protein: 51, carbs: 46, fat: 23 },
+    macros: { kcal: 605, protein: 49, carbs: 46, fat: 23 },
   },
   {
     name: 'Milanesa napolitana al horno',
@@ -379,7 +379,7 @@ export const RECIPES: Recipe[] = [
       'Armar los tacos con la carne, los vegetales y el yogur arriba',
       'Para almuerzo: sumale 1 banana (150 g) de postre',
     ],
-    macros: { kcal: 586, protein: 51, carbs: 48, fat: 21 },
+    macros: { kcal: 590, protein: 49, carbs: 49, fat: 21 },
   },
   {
     name: 'Ñoquis de papa caseros con pollo',
@@ -435,7 +435,34 @@ export const RECIPES: Recipe[] = [
       'Armar el wrap con el pollo, el yogur y los vegetales, enrollar',
       'Para almuerzo: sumale 1 banana (150 g) de postre',
     ],
-    macros: { kcal: 562, protein: 66, carbs: 47, fat: 11 },
+    macros: { kcal: 566, protein: 64, carbs: 48, fat: 11 },
+  },
+
+  {
+    name: 'Pan árabe casero (integral)',
+    meal: 'Meal prep',
+    time: '~2h total (10 min amasado + 45-60 min leudado + 10-12 min horno) — rinde 8 panes',
+    batch: [],
+    extras: [
+      '250 g de harina integral (etiqueta real: 306 kcal/6P/60C/2G cada 100g)',
+      '250 g de harina 000 (etiqueta real: 332 kcal/10P/70C/1G cada 100g)',
+      '300 ml de agua tibia (35-40°C)',
+      '7 g de levadura seca instantánea (1 sobre)',
+      '5 g de sal fina',
+      '15 g de aceite neutro (no de oliva — se hornea, y el de oliva se degrada con el calor; guardá el de oliva para usarlo crudo en las comidas)',
+    ],
+    steps: [
+      'Disolver la levadura en el agua tibia, dejar espumar 8-12 min (sin azúcar tarda un poco más que con, pero prende igual)',
+      'Mezclar las harinas con la sal en un bowl grande, hacer un hueco en el centro',
+      'Agregar el agua con la levadura y el aceite, integrar y amasar 8-10 min hasta que quede una masa lisa y elástica',
+      'Formar un bollo, tapar con un repasador y dejar levar en lugar cálido 45-60 min hasta que duplique el volumen',
+      'Dividir en 8 bollos de ~104 g crudos cada uno, estirar en discos de ~0,5 cm de espesor',
+      'Horno bien fuerte (240-250°C) con placa o piedra precalentada, 4-6 min por lado hasta que infle y dore — el inflado es lo que forma el "bolsillo" para rellenar',
+      'Enfriar sobre rejilla antes de guardar (si se apilan calientes, se humedecen y se pegan)',
+      'Dura 4-5 días en tupper cerrado en la heladera, o se puede freezar en bolsas individuales por pan',
+      'Macros por pan (90g horneado) — estimado con tus etiquetas reales de harina/levadura/aceite, pendiente de calibrar con el peso real del batch (crudo vs. horneado)',
+    ],
+    macros: { kcal: 225, protein: 6, carbs: 42, fat: 3 },
   },
 
   {
