@@ -15,7 +15,7 @@ function isValidMacro(n: unknown): n is number {
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
-  const { name, brand, kcal_100, protein_100, carbs_100, fat_100, serving_g } = body
+  const { name, brand, kcal_100, protein_100, carbs_100, fat_100, serving_g, barcode } = body
 
   if (!name || typeof name !== 'string' || !name.trim()) {
     return NextResponse.json({ error: 'name requerido' }, { status: 400 })
@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     )
   }
+  const cleanBarcode = typeof barcode === 'string' && /^\d{6,14}$/.test(barcode.trim()) ? barcode.trim() : null
 
   const supabase = getSupabase()
   const { data, error } = await supabase
@@ -39,11 +40,17 @@ export async function POST(request: NextRequest) {
       carbs_100,
       fat_100,
       serving_g: isValidMacro(serving_g) && serving_g > 0 ? serving_g : null,
+      barcode: cleanBarcode,
     })
     .select()
     .single()
 
   if (error) {
+    // barcode ya usado por otro producto (carrera con el scanner, o repetido) — no es fatal
+    if (error.code === '23505' && cleanBarcode) {
+      const { data: existing } = await supabase.from('foods').select('*').eq('barcode', cleanBarcode).maybeSingle()
+      if (existing) return NextResponse.json(existing, { status: 200 })
+    }
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 

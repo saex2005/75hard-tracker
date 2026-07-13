@@ -1,8 +1,13 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import type { Food, MealSlot } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
+
+// Carga diferida: @zxing arrastra ~125kB que no hace falta bajar en cada
+// visita a /nutricion, solo cuando se toca el botón de escanear.
+const BarcodeScanner = dynamic(() => import('./BarcodeScanner'), { ssr: false })
 
 export type NewLogEntry = {
   meal: MealSlot
@@ -47,6 +52,13 @@ export default function FoodSearch({ onAdd }: { onAdd: (entry: NewLogEntry) => v
   const [grams, setGrams] = useState<number>(100)
   const [meal, setMeal] = useState<MealSlot>(defaultMealByHour())
   const [showCreate, setShowCreate] = useState(false)
+  const [scanning, setScanning] = useState(false)
+  const [scanLookup, setScanLookup] = useState(false)
+  const [prefillFromScan, setPrefillFromScan] = useState<{
+    barcode: string
+    name?: string
+    brand?: string
+  } | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
   // Alimentos más usados (últimos 30 días) — atajo antes de tipear
@@ -103,7 +115,30 @@ export default function FoodSearch({ onAdd }: { onAdd: (entry: NewLogEntry) => v
     setSelected(food)
     setGrams(food.serving_g ?? 100)
     setShowCreate(false)
+    setPrefillFromScan(null)
   }
+
+  const handleBarcodeDetected = useCallback(async (code: string) => {
+    setScanning(false)
+    setScanLookup(true)
+    try {
+      const res = await fetch(`/api/foods/barcode/${encodeURIComponent(code)}`)
+      const data = await res.json()
+      if (data.found && data.food) {
+        selectFood(data.food as Food)
+      } else {
+        // No está en la base local ni en Open Food Facts con macros completos —
+        // llevar a "crear alimento" con el código ya cargado (nombre/marca si OFF los dio)
+        setPrefillFromScan({ barcode: code, name: data.offName ?? undefined, brand: data.offBrand ?? undefined })
+        setShowCreate(true)
+      }
+    } catch {
+      setPrefillFromScan({ barcode: code })
+      setShowCreate(true)
+    } finally {
+      setScanLookup(false)
+    }
+  }, [])
 
   function handleAdd() {
     if (!selected || grams <= 0) return
@@ -126,17 +161,45 @@ export default function FoodSearch({ onAdd }: { onAdd: (entry: NewLogEntry) => v
 
   return (
     <div className="space-y-3">
-      <input
-        type="search"
-        inputMode="search"
-        value={query}
-        onChange={(e) => {
-          setQuery(e.target.value)
-          setSelected(null)
-        }}
-        placeholder="Buscar alimento o marca…"
-        className="w-full h-12 px-4 bg-[#1C1C1C] border border-[#262626] rounded-xl text-sm font-medium placeholder:text-[#52525B] focus:outline-none focus:border-[#3F3F46]"
-      />
+      {scanning && (
+        <BarcodeScanner onDetected={handleBarcodeDetected} onClose={() => setScanning(false)} />
+      )}
+
+      <div className="flex gap-2">
+        <input
+          type="search"
+          inputMode="search"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            setSelected(null)
+          }}
+          placeholder="Buscar alimento o marca…"
+          className="flex-1 h-12 px-4 bg-[#1C1C1C] border border-[#262626] rounded-xl text-sm font-medium placeholder:text-[#52525B] focus:outline-none focus:border-[#3F3F46]"
+        />
+        <button
+          onClick={() => {
+            setSelected(null)
+            setShowCreate(false)
+            setScanning(true)
+          }}
+          disabled={scanLookup}
+          aria-label="Escanear código de barras"
+          className="h-12 w-12 shrink-0 flex items-center justify-center bg-[#1C1C1C] border border-[#262626] rounded-xl active:scale-95 transition-transform disabled:opacity-50"
+        >
+          {scanLookup ? (
+            <span className="h-4 w-4 border-2 border-[#52525B] border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 7V5a1 1 0 0 1 1-1h2M20 7V5a1 1 0 0 0-1-1h-2M4 17v2a1 1 0 0 0 1 1h2M20 17v2a1 1 0 0 1-1 1h-2M7 8v8M10 8v8M13 8v8M16 8v8" strokeLinecap="round" />
+            </svg>
+          )}
+        </button>
+      </div>
+
+      {scanLookup && (
+        <p className="text-xs text-[#52525B] font-medium text-center">Buscando el producto…</p>
+      )}
 
       {/* Recientes — visibles solo sin búsqueda activa */}
       {!selected && query.trim().length < 2 && recents.length > 0 && (
@@ -216,12 +279,17 @@ export default function FoodSearch({ onAdd }: { onAdd: (entry: NewLogEntry) => v
 
       {showCreate && !selected && (
         <CreateFoodForm
-          initialName={query.trim()}
+          initialName={prefillFromScan?.name ?? query.trim()}
+          initialBrand={prefillFromScan?.brand}
+          barcode={prefillFromScan?.barcode}
           onCreated={(food) => {
             setShowCreate(false)
             selectFood(food)
           }}
-          onCancel={() => setShowCreate(false)}
+          onCancel={() => {
+            setShowCreate(false)
+            setPrefillFromScan(null)
+          }}
         />
       )}
 
@@ -332,15 +400,19 @@ export default function FoodSearch({ onAdd }: { onAdd: (entry: NewLogEntry) => v
 
 function CreateFoodForm({
   initialName,
+  initialBrand,
+  barcode,
   onCreated,
   onCancel,
 }: {
   initialName: string
+  initialBrand?: string
+  barcode?: string
   onCreated: (food: Food) => void
   onCancel: () => void
 }) {
   const [name, setName] = useState(initialName)
-  const [brand, setBrand] = useState('')
+  const [brand, setBrand] = useState(initialBrand ?? '')
   const [kcal, setKcal] = useState('')
   const [protein, setProtein] = useState('')
   const [carbs, setCarbs] = useState('')
@@ -367,6 +439,7 @@ function CreateFoodForm({
           protein_100: Number(protein),
           carbs_100: Number(carbs),
           fat_100: Number(fat),
+          barcode: barcode || undefined,
         }),
       })
       if (!res.ok) {
@@ -390,6 +463,11 @@ function CreateFoodForm({
       <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#52525B]">
         Nuevo alimento — valores por 100 g (de la etiqueta)
       </p>
+      {barcode && (
+        <p className="text-xs text-orange-500 font-medium">
+          Código {barcode} escaneado — no está en la base, se guarda con este código para reconocerlo la próxima vez
+        </p>
+      )}
       <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre" className={inputClass} />
       <input value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Marca (opcional)" className={inputClass} />
       <div className="grid grid-cols-4 gap-2">
