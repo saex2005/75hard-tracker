@@ -6,66 +6,6 @@ export const DAILY_MACROS = {
   deficit: 500,
 }
 
-export const MEALS = [
-  {
-    time: '6:45',
-    name: 'Pre-cardio',
-    kcal: null as number | null,
-    protein: null as number | null,
-    note: 'Cardio en ayunas',
-    items: ['Café solo o con 50 ml de leche descremada'],
-  },
-  {
-    time: '8:15',
-    name: 'Desayuno',
-    kcal: 650,
-    protein: 35,
-    note: 'Post-cardio',
-    items: [
-      '3 huevos revueltos (~165 g)',
-      '80 g de avena (seco) + 1 banana (~120 g) + canela',
-    ],
-  },
-  {
-    time: '13:00',
-    name: 'Almuerzo',
-    kcal: 700,
-    protein: 50,
-    note: 'Tupper en la fábrica',
-    items: [
-      '200 g de pollo o carne magra cocidos',
-      '250 g de arroz cocido o 250 g de papa',
-      '200 g de verduras asadas',
-      '10 g de aceite de oliva (1 cda) o 50 g de palta (¼)',
-    ],
-  },
-  {
-    time: '16:45',
-    name: 'Merienda',
-    kcal: 450,
-    protein: 30,
-    note: 'Pre-pesas',
-    items: [
-      '200 g de yogur griego + 40 g de avena (seco)',
-      'o: 2 tostadas integrales + 30 g de queso untable + 40 g de pavita',
-      '1 fruta (~150 g) + 20 g de frutos secos (2-3 veces/semana)',
-    ],
-  },
-  {
-    time: '20:30',
-    name: 'Cena',
-    kcal: 550,
-    protein: 50,
-    note: 'Post-pesas',
-    items: [
-      '200 g de proteína cocida (pollo, cuadrada, merluza o 2 latas atún)',
-      '200 g de papa o batata',
-      '150-200 g de ensalada o verduras',
-      '10 g de aceite de oliva (1 cda)',
-    ],
-  },
-]
-
 // Quick-add: las 4 comidas del plan con macros completos.
 // C y G distribuidos para que la suma cierre en DAILY_MACROS (2350/170/260/70).
 export const QUICK_MEALS = [

@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { DAILY_MACROS, MEALS, MEAL_PREP, SHOPPING_LIST, EMERGENCY_MEALS, QUICK_MEALS, RECIPES, SEASONINGS, RECIPE_RULES } from '@/config/nutrition'
+import { DAILY_MACROS, MEAL_PREP, SHOPPING_LIST, EMERGENCY_MEALS, QUICK_MEALS, RECIPES, SEASONINGS, RECIPE_RULES } from '@/config/nutrition'
 import type { Recipe } from '@/config/nutrition'
 import { cn, todayISO, isDayComplete } from '@/lib/utils'
 import { supabase, type FoodLog, type MealSlot } from '@/lib/supabase'
@@ -40,11 +40,10 @@ async function checkAndMarkDiet(date: string) {
   }
 }
 
-type Tab = 'registro' | 'comidas' | 'mealprep' | 'recetas' | 'compras' | 'emergencias'
+type Tab = 'registro' | 'mealprep' | 'recetas' | 'compras' | 'emergencias'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'registro', label: 'Registro' },
-  { id: 'comidas', label: 'Comidas' },
   { id: 'mealprep', label: 'Meal Prep' },
   { id: 'recetas', label: 'Recetas' },
   { id: 'compras', label: 'Compras' },
@@ -89,7 +88,6 @@ export default function NutricionPage() {
       {/* Contenido */}
       <div className="px-4 space-y-3">
         {activeTab === 'registro' && <TabRegistro />}
-        {activeTab === 'comidas' && <TabComidas />}
         {activeTab === 'mealprep' && <TabMealPrep />}
         {activeTab === 'recetas' && <TabRecetas />}
         {activeTab === 'compras' && <TabCompras />}
@@ -259,57 +257,6 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
     <h2 className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#52525B] mb-3">
       {children}
     </h2>
-  )
-}
-
-function TabComidas() {
-  return (
-    <div className="space-y-3 pb-4">
-      {MEALS.map((meal) => (
-        <div key={meal.name} className="bg-[#141414] border border-[#262626] rounded-xl p-4">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <p className="text-[11px] font-mono text-[#52525B]">{meal.time}</p>
-              <p className="text-base font-bold">{meal.name}</p>
-              <p className="text-xs text-[#52525B] font-medium">{meal.note}</p>
-            </div>
-            {meal.kcal !== null && (
-              <div className="text-right shrink-0 ml-3">
-                <p className="text-sm font-black tabular-nums text-[#FAFAFA]">{meal.kcal} kcal</p>
-                <p className="text-xs text-accent font-mono tabular-nums">{meal.protein}g P</p>
-              </div>
-            )}
-          </div>
-          <ul className="space-y-1.5">
-            {meal.items.map((item, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <span className="text-[#3F3F46] mt-1 shrink-0">—</span>
-                <span className="text-sm text-[#A1A1AA] font-medium">{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-      {/* Método del plato */}
-      <div className="bg-[#141414] border border-[#262626] rounded-xl p-4">
-        <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#52525B] mb-2">Método del plato</p>
-        <div className="space-y-1">
-          {[
-            ['½ plato', 'verduras'],
-            ['¼ plato', 'proteína'],
-            ['¼ plato', 'arroz / papa / legumbres'],
-          ].map(([fraccion, contenido]) => (
-            <div key={fraccion} className="flex items-center gap-2">
-              <span className="text-sm font-black text-accent tabular-nums w-14 shrink-0">{fraccion}</span>
-              <span className="text-sm text-[#A1A1AA] font-medium">{contenido}</span>
-            </div>
-          ))}
-        </div>
-        <p className="text-xs text-[#52525B] font-medium mt-2">
-          El plato ocupa ¾ de su capacidad. Sin carbo → proteína pasa a medio plato.
-        </p>
-      </div>
-    </div>
   )
 }
 
