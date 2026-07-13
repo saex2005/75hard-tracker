@@ -4,10 +4,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import type { Food, MealSlot } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
+import type { LabelScanResult } from './LabelScanner'
 
 // Carga diferida: @zxing arrastra ~125kB que no hace falta bajar en cada
 // visita a /nutricion, solo cuando se toca el botón de escanear.
 const BarcodeScanner = dynamic(() => import('./BarcodeScanner'), { ssr: false })
+const LabelScanner = dynamic(() => import('./LabelScanner'), { ssr: false })
 
 export type NewLogEntry = {
   meal: MealSlot
@@ -55,6 +57,8 @@ export default function FoodSearch({ onAdd }: { onAdd: (entry: NewLogEntry) => v
   const [recentsOpen, setRecentsOpen] = useState(false)
   const [scanning, setScanning] = useState(false)
   const [scanLookup, setScanLookup] = useState(false)
+  const [showLabelScanner, setShowLabelScanner] = useState(false)
+  const [labelScanError, setLabelScanError] = useState<string | null>(null)
   const [prefillFromScan, setPrefillFromScan] = useState<{
     barcode: string
     name?: string
@@ -120,6 +124,7 @@ export default function FoodSearch({ onAdd }: { onAdd: (entry: NewLogEntry) => v
     setSelected(food)
     setGrams(food.serving_g ?? 100)
     setShowCreate(false)
+    setShowLabelScanner(false)
     setPrefillFromScan(null)
   }
 
@@ -132,9 +137,9 @@ export default function FoodSearch({ onAdd }: { onAdd: (entry: NewLogEntry) => v
       if (data.found && data.food) {
         selectFood(data.food as Food)
       } else {
-        // No está en la base local ni en Open Food Facts con los 4 macros completos —
-        // llevar a "crear alimento" con el código ya cargado, más nombre/marca/lo que
-        // OFF sí haya dado de macros, para no tener que cargar todo desde cero
+        // No está en la base local ni en Open Food Facts con los 4 macros completos.
+        // Guardar lo que OFF sí haya dado (nombre/marca/macros parciales) y pasar a
+        // la foto de la etiqueta — es el próximo fallback, antes de pedir carga manual
         setPrefillFromScan({
           barcode: code,
           name: data.offName ?? undefined,
@@ -144,15 +149,42 @@ export default function FoodSearch({ onAdd }: { onAdd: (entry: NewLogEntry) => v
           carbs: data.offCarbs ?? undefined,
           fat: data.offFat ?? undefined,
         })
-        setShowCreate(true)
+        setLabelScanError(null)
+        setShowLabelScanner(true)
       }
     } catch {
       setPrefillFromScan({ barcode: code })
-      setShowCreate(true)
+      setLabelScanError(null)
+      setShowLabelScanner(true)
     } finally {
       setScanLookup(false)
     }
   }, [])
+
+  function handleLabelScanResult(result: LabelScanResult) {
+    setShowLabelScanner(false)
+    if (result.found) {
+      selectFood(result.food)
+      return
+    }
+    // La foto tampoco alcanzó para los 4 macros — combinar con lo que ya
+    // teníamos de OFF (la foto gana si hay dato en ambos lados) y caer
+    // recién ahí al formulario manual, precargado con todo lo disponible
+    setPrefillFromScan((prev) => ({
+      barcode: prev?.barcode ?? '',
+      name: result.name ?? prev?.name,
+      brand: result.brand ?? prev?.brand,
+      kcal: result.kcal ?? prev?.kcal,
+      protein: result.protein ?? prev?.protein,
+      carbs: result.carbs ?? prev?.carbs,
+      fat: result.fat ?? prev?.fat,
+    }))
+    setShowCreate(true)
+  }
+
+  function handleLabelScanError(message: string) {
+    setLabelScanError(message)
+  }
 
   function handleAdd() {
     if (!selected || grams <= 0) return
@@ -195,6 +227,7 @@ export default function FoodSearch({ onAdd }: { onAdd: (entry: NewLogEntry) => v
           onClick={() => {
             setSelected(null)
             setShowCreate(false)
+            setShowLabelScanner(false)
             setScanning(true)
           }}
           disabled={scanLookup}
@@ -303,6 +336,28 @@ export default function FoodSearch({ onAdd }: { onAdd: (entry: NewLogEntry) => v
             className="h-11 px-5 bg-[#1C1C1C] border border-[#262626] rounded-xl text-sm font-semibold active:scale-95 transition-transform"
           >
             Crear alimento
+          </button>
+        </div>
+      )}
+
+      {showLabelScanner && !selected && (
+        <div className="space-y-2">
+          <LabelScanner
+            barcode={prefillFromScan?.barcode}
+            onResult={handleLabelScanResult}
+            onError={handleLabelScanError}
+          />
+          {labelScanError && (
+            <p className="text-xs text-red-500 font-medium text-center">{labelScanError} — probá sacar la foto de nuevo, o cargalo a mano</p>
+          )}
+          <button
+            onClick={() => {
+              setShowLabelScanner(false)
+              setShowCreate(true)
+            }}
+            className="w-full h-10 text-xs font-semibold text-[#52525B] active:scale-[0.98] transition-transform"
+          >
+            Cargar los datos a mano en vez de sacar una foto
           </button>
         </div>
       )}
