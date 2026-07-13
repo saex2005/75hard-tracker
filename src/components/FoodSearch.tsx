@@ -59,6 +59,10 @@ export default function FoodSearch({ onAdd }: { onAdd: (entry: NewLogEntry) => v
     barcode: string
     name?: string
     brand?: string
+    kcal?: number
+    protein?: number
+    carbs?: number
+    fat?: number
   } | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
@@ -128,9 +132,18 @@ export default function FoodSearch({ onAdd }: { onAdd: (entry: NewLogEntry) => v
       if (data.found && data.food) {
         selectFood(data.food as Food)
       } else {
-        // No está en la base local ni en Open Food Facts con macros completos —
-        // llevar a "crear alimento" con el código ya cargado (nombre/marca si OFF los dio)
-        setPrefillFromScan({ barcode: code, name: data.offName ?? undefined, brand: data.offBrand ?? undefined })
+        // No está en la base local ni en Open Food Facts con los 4 macros completos —
+        // llevar a "crear alimento" con el código ya cargado, más nombre/marca/lo que
+        // OFF sí haya dado de macros, para no tener que cargar todo desde cero
+        setPrefillFromScan({
+          barcode: code,
+          name: data.offName ?? undefined,
+          brand: data.offBrand ?? undefined,
+          kcal: data.offKcal ?? undefined,
+          protein: data.offProtein ?? undefined,
+          carbs: data.offCarbs ?? undefined,
+          fat: data.offFat ?? undefined,
+        })
         setShowCreate(true)
       }
     } catch {
@@ -298,6 +311,10 @@ export default function FoodSearch({ onAdd }: { onAdd: (entry: NewLogEntry) => v
         <CreateFoodForm
           initialName={prefillFromScan?.name ?? query.trim()}
           initialBrand={prefillFromScan?.brand}
+          initialKcal={prefillFromScan?.kcal}
+          initialProtein={prefillFromScan?.protein}
+          initialCarbs={prefillFromScan?.carbs}
+          initialFat={prefillFromScan?.fat}
           barcode={prefillFromScan?.barcode}
           onCreated={(food) => {
             setShowCreate(false)
@@ -418,22 +435,30 @@ export default function FoodSearch({ onAdd }: { onAdd: (entry: NewLogEntry) => v
 function CreateFoodForm({
   initialName,
   initialBrand,
+  initialKcal,
+  initialProtein,
+  initialCarbs,
+  initialFat,
   barcode,
   onCreated,
   onCancel,
 }: {
   initialName: string
   initialBrand?: string
+  initialKcal?: number
+  initialProtein?: number
+  initialCarbs?: number
+  initialFat?: number
   barcode?: string
   onCreated: (food: Food) => void
   onCancel: () => void
 }) {
   const [name, setName] = useState(initialName)
   const [brand, setBrand] = useState(initialBrand ?? '')
-  const [kcal, setKcal] = useState('')
-  const [protein, setProtein] = useState('')
-  const [carbs, setCarbs] = useState('')
-  const [fat, setFat] = useState('')
+  const [kcal, setKcal] = useState(initialKcal !== undefined ? String(initialKcal) : '')
+  const [protein, setProtein] = useState(initialProtein !== undefined ? String(initialProtein) : '')
+  const [carbs, setCarbs] = useState(initialCarbs !== undefined ? String(initialCarbs) : '')
+  const [fat, setFat] = useState(initialFat !== undefined ? String(initialFat) : '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 

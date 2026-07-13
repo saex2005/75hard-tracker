@@ -76,12 +76,18 @@ export async function GET(_request: NextRequest, { params }: { params: { code: s
     const fat_100 = n.fat_100g
 
     if (!isFiniteNumber(kcal_100) || !isFiniteNumber(protein_100) || !isFiniteNumber(carbs_100) || !isFiniteNumber(fat_100)) {
-      // OFF tiene el producto pero sin macros completos — igual sirve el nombre para precargar el form
+      // OFF tiene el producto pero sin los 4 macros completos — no se puede guardar
+      // así, pero sirve para precargar nombre/marca y lo que sí haya de macros,
+      // en vez de descartar todo y hacer cargar el producto desde cero
       return NextResponse.json({
         found: false,
         barcode: code,
         offName: off.product.product_name || null,
         offBrand: off.product.brands || null,
+        offKcal: isFiniteNumber(kcal_100) ? kcal_100 : null,
+        offProtein: isFiniteNumber(protein_100) ? protein_100 : null,
+        offCarbs: isFiniteNumber(carbs_100) ? carbs_100 : null,
+        offFat: isFiniteNumber(fat_100) ? fat_100 : null,
       })
     }
 
