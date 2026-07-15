@@ -396,27 +396,18 @@ export default function HomePage() {
             onToggle={() => updateDay({ diet_done: !day.diet_done })}
           />
 
-          {/* InsightMkt */}
+          {/* Video diario */}
           <TaskCard
-            icon="💼"
-            label="InsightMkt — 3 hs"
+            icon="🎥"
+            label="Video — @santimeza.ads"
             done={day.insight_done}
             onToggle={() =>
               updateDay({
                 insight_done: !day.insight_done,
-                insight_minutes: !day.insight_done ? 180 : 0,
+                insight_minutes: !day.insight_done ? 1 : 0,
               })
             }
-          >
-            {day.insight_done && (
-              <MinutePicker
-                minutes={day.insight_minutes}
-                onChange={(n) => updateDay({ insight_minutes: n })}
-                label="InsightMkt"
-                options={[120, 150, 180, 210, 240]}
-              />
-            )}
-          </TaskCard>
+          />
 
           {/* Lectura */}
           <TaskCard

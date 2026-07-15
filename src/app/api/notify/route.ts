@@ -141,18 +141,18 @@ export async function GET(request: NextRequest) {
     sent = await sendPush(subs, `Día ${d} — estado a las 14hs`, body)
   }
 
-  // --- INSIGHTMKT 15:15 ARS ---
+  // --- VIDEO DIARIO 15:15 ARS ---
   if (type === 'insight') {
     if (today.insight_done) {
       return NextResponse.json({ sent: 0, reason: 'insight done' })
     }
     const body = pick([
-      'Saliste de la fábrica. Ahora arrancan las 3 horas que te acercan al primer cliente.',
-      'Bloque InsightMkt: 15:15 a 17:45. El primer cliente no se consigue solo.',
-      '3 horas de InsightMkt pendientes. Esto también resetea el reto. Arrancá.',
-      'La fábrica paga las cuentas. Estas 3 horas construyen la salida. Dale.',
+      'Todavía no subiste el video de hoy a @santimeza.ads. Grabalo y publicalo.',
+      'Falta el Reel del día. No importa la calidad, importa que salga.',
+      'El video diario también resetea el reto. Grabá algo y subilo.',
+      'Documentá el proceso: un Reel en @santimeza.ads, cualquier calidad, antes de las 23:59.',
     ])
-    sent = await sendPush(subs, '💼 InsightMkt — 3 hs', body)
+    sent = await sendPush(subs, '🎥 Video diario — @santimeza.ads', body)
   }
 
   // --- GYM + CARDIO 17:30 ARS ---

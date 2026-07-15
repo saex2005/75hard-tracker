@@ -106,7 +106,7 @@ export default function StatsPage() {
     { label: '🏃 Cardio', value: stats.taskCompletion.cardio },
     { label: '💧 Agua', value: stats.taskCompletion.water },
     { label: '🥗 Dieta', value: stats.taskCompletion.diet },
-    { label: '💼 InsightMkt', value: stats.taskCompletion.insight },
+    { label: '🎥 Video', value: stats.taskCompletion.insight },
     { label: '📖 Lectura', value: stats.taskCompletion.reading },
     { label: '📸 Foto', value: stats.taskCompletion.photo },
   ]

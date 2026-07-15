@@ -28,7 +28,7 @@ const TOOLS: Anthropic.Tool[] = [
   {
     name: 'consultar_dias',
     description:
-      'Historial de días del reto: por día trae tasks completados, minutos de gym/cardio/insightmkt, botellas de agua, página de lectura y si el día cerró completo. Usar para preguntas sobre días pasados, rachas o patrones.',
+      'Historial de días del reto: por día trae tasks completados, minutos de gym/cardio, si se publicó el video del día, botellas de agua, página de lectura y si el día cerró completo. Usar para preguntas sobre días pasados, rachas o patrones.',
     input_schema: {
       type: 'object',
       properties: {
@@ -233,7 +233,7 @@ async function buildLiveState(): Promise<string> {
         `dieta: ${day.diet_done ? '✅' : '❌ pendiente (se marca al cierre del día)'}`,
         `lectura: ${day.reading_done ? `✅ (pág. ${day.reading_page})` : '❌ pendiente'}`,
         `foto: ${day.photo_url ? '✅' : '❌ pendiente'}`,
-        `insightmkt: ${day.insight_done ? `✅ (${day.insight_minutes} min)` : '❌ pendiente'}`,
+        `video @santimeza.ads: ${day.insight_done ? '✅ publicado' : '❌ pendiente'}`,
       ].join('\n- ')
     : 'todavía no hay registro del día en la app'
 

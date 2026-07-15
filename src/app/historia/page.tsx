@@ -117,7 +117,7 @@ export default function HistoriaPage() {
                       {!cardioOk && <Tag>🏃 cardio</Tag>}
                       {!waterOk && <Tag>💧 agua</Tag>}
                       {!dietOk && <Tag>🥗 dieta</Tag>}
-                      {!insightOk && <Tag>💼 insightmkt</Tag>}
+                      {!insightOk && <Tag>🎥 video</Tag>}
                       {!readingOk && <Tag>📖 lectura</Tag>}
                       {!photoOk && <Tag>📸 foto</Tag>}
                     </div>
