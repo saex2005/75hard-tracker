@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
 
   const { data: today } = await supabase
     .from('days')
-    .select('completed, day_number, gym_done, cardio_done, water_bottles, diet_done, reading_done, photo_url, insight_done')
+    .select('completed, day_number, gym_done, cardio_done, water_bottles, diet_done, reading_done, photo_url')
     .eq('date', todayISO)
     .single()
 
@@ -118,8 +118,8 @@ export async function GET(request: NextRequest) {
 
   // --- PROGRESO GENERAL 14:00 ARS ---
   if (type === 'progress') {
-    const done = [today.gym_done, today.cardio_done, today.diet_done, today.insight_done, today.reading_done, !!today.photo_url].filter(Boolean).length
-    const pending = 6 - done
+    const done = [today.gym_done, today.cardio_done, today.diet_done, today.reading_done, !!today.photo_url].filter(Boolean).length
+    const pending = 5 - done
     const water = today.water_bottles
 
     if (pending === 0 && water >= BOTTLES_GOAL) {
@@ -135,24 +135,18 @@ export async function GET(request: NextRequest) {
         `Ninguna task completada. El día no se va a completar solo.`,
       ])
     } else {
-      body = `${done}/6 tasks listas. Faltan ${pending}. Agua: ${water}/${BOTTLES_GOAL}. Vamos.`
+      body = `${done}/5 tasks listas. Faltan ${pending}. Agua: ${water}/${BOTTLES_GOAL}. Vamos.`
     }
 
     sent = await sendPush(subs, `Día ${d} — estado a las 14hs`, body)
   }
 
-  // --- VIDEO DIARIO 15:15 ARS ---
+  // --- (ex VIDEO DIARIO 15:15 ARS) ---
+  // Task de InsightMkt/video sacado del reto el 16/07/2026 — ya no es binario
+  // ni resetea. Este tipo queda inerte por si el workflow de n8n todavía lo llama;
+  // desactivar/borrar el workflow en n8n para que deje de correr del todo.
   if (type === 'insight') {
-    if (today.insight_done) {
-      return NextResponse.json({ sent: 0, reason: 'insight done' })
-    }
-    const body = pick([
-      'Todavía no subiste el video de hoy a @santimeza.ads. Grabalo y publicalo.',
-      'Falta el Reel del día. No importa la calidad, importa que salga.',
-      'El video diario también resetea el reto. Grabá algo y subilo.',
-      'Documentá el proceso: un Reel en @santimeza.ads, cualquier calidad, antes de las 23:59.',
-    ])
-    sent = await sendPush(subs, '🎥 Video diario — @santimeza.ads', body)
+    return NextResponse.json({ sent: 0, reason: 'insight task removed 16/07/2026' })
   }
 
   // --- GYM + CARDIO 17:30 ARS ---
@@ -268,7 +262,6 @@ export async function GET(request: NextRequest) {
       !today.gym_done,
       !today.cardio_done,
       !today.diet_done,
-      !today.insight_done,
       !today.reading_done,
       !today.photo_url,
       today.water_bottles < BOTTLES_GOAL,

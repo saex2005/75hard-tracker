@@ -114,7 +114,6 @@ async function runTool(name: string, input: Record<string, unknown>): Promise<st
           dieta: d.diet_done,
           lectura_pag: d.reading_done ? d.reading_page : null,
           foto: !!d.photo_url,
-          insight_min: d.insight_done ? d.insight_minutes : 0,
         }))
         return JSON.stringify(rows)
       }
@@ -233,7 +232,6 @@ async function buildLiveState(): Promise<string> {
         `dieta: ${day.diet_done ? '✅' : '❌ pendiente (se marca al cierre del día)'}`,
         `lectura: ${day.reading_done ? `✅ (pág. ${day.reading_page})` : '❌ pendiente'}`,
         `foto: ${day.photo_url ? '✅' : '❌ pendiente'}`,
-        `video @santimeza.ads: ${day.insight_done ? '✅ publicado' : '❌ pendiente'}`,
       ].join('\n- ')
     : 'todavía no hay registro del día en la app'
 

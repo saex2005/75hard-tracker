@@ -64,9 +64,8 @@ export default function HistoriaPage() {
             const dietOk = day.diet_done
             const readingOk = day.reading_done
             const photoOk = !!day.photo_url
-            const insightOk = day.insight_done
 
-            const tasksDone = [gymOk, cardioOk, waterOk, dietOk, insightOk, readingOk, photoOk].filter(Boolean).length
+            const tasksDone = [gymOk, cardioOk, waterOk, dietOk, readingOk, photoOk].filter(Boolean).length
 
             return (
               <li key={day.id}>
@@ -78,7 +77,7 @@ export default function HistoriaPage() {
                       : 'bg-surface border-[#262626]'
                   )}
                   role="article"
-                  aria-label={`Día ${day.day_number}: ${completed ? 'completado' : `${tasksDone} de 7 tasks`}`}
+                  aria-label={`Día ${day.day_number}: ${completed ? 'completado' : `${tasksDone} de 6 tasks`}`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -97,8 +96,8 @@ export default function HistoriaPage() {
                       </div>
                     </div>
 
-                    <div className="flex gap-1" aria-label={`${tasksDone} de 7 tasks completados`}>
-                      {[gymOk, cardioOk, waterOk, dietOk, insightOk, readingOk, photoOk].map((ok, i) => (
+                    <div className="flex gap-1" aria-label={`${tasksDone} de 6 tasks completados`}>
+                      {[gymOk, cardioOk, waterOk, dietOk, readingOk, photoOk].map((ok, i) => (
                         <span
                           key={i}
                           className={cn(
@@ -117,7 +116,6 @@ export default function HistoriaPage() {
                       {!cardioOk && <Tag>🏃 cardio</Tag>}
                       {!waterOk && <Tag>💧 agua</Tag>}
                       {!dietOk && <Tag>🥗 dieta</Tag>}
-                      {!insightOk && <Tag>🎥 video</Tag>}
                       {!readingOk && <Tag>📖 lectura</Tag>}
                       {!photoOk && <Tag>📸 foto</Tag>}
                     </div>

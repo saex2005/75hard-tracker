@@ -48,7 +48,7 @@ export function dayNumberFor(dateISO: string, currentRunStart: string): number {
   return differenceInDays(parseISO(dateISO), parseISO(currentRunStart)) + 1
 }
 
-// Verifica las 7 tasks reales de un día — la fuente de verdad del cierre.
+// Verifica las 6 tasks reales de un día — la fuente de verdad del cierre.
 // `completed` es un derivado de esto; nunca al revés.
 type DayTasks = {
   gym_done: boolean
@@ -56,7 +56,6 @@ type DayTasks = {
   water_bottles: number
   diet_done: boolean
   reading_done: boolean
-  insight_done: boolean
   photo_url: string | null
 }
 
@@ -67,7 +66,6 @@ export function isDayComplete(day: DayTasks): boolean {
     day.water_bottles >= BOTTLES_PER_DAY &&
     day.diet_done &&
     day.reading_done &&
-    day.insight_done &&
     !!day.photo_url
   )
 }

@@ -6,7 +6,7 @@ import { CHALLENGE_CONFIG } from '@/config/challenge'
 // Única lógica de cierre/reset del reto. La usan el cron (03:05) y el
 // notify evening (21:05) — nunca duplicar esto en otro lado.
 //
-// Red de seguridad: si ayer tiene las 7 tasks completas pero completed=false
+// Red de seguridad: si ayer tiene las 6 tasks completas pero completed=false
 // (no se tocó "cerrar" o falló el auto-cierre), se cierra en vez de resetear.
 // Solo se resetea cuando de verdad faltó una task.
 
@@ -45,7 +45,7 @@ export async function checkAndReset(
     return { reset: false, closedSafetyNet: false, reason: 'yesterday completed' }
   }
 
-  // Red de seguridad: las 7 tasks estaban, solo faltó el flag
+  // Red de seguridad: las 6 tasks estaban, solo faltó el flag
   if (yDay && isDayComplete(yDay)) {
     await supabase.from('days').update({ completed: true }).eq('id', yDay.id)
 
@@ -110,8 +110,6 @@ export async function ensureTodayRow(
       reading_done: false,
       reading_page: 0,
       photo_url: null,
-      insight_done: false,
-      insight_minutes: 0,
       completed: false,
     })
   } else if (existing.day_number !== dayNumber) {

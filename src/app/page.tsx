@@ -103,8 +103,6 @@ export default function HomePage() {
           reading_done: false,
           reading_page: 0,
           photo_url: null,
-          insight_done: false,
-          insight_minutes: 0,
           completed: false,
         })
         .select()
@@ -394,19 +392,6 @@ export default function HomePage() {
             label="Dieta — sin cheat meals"
             done={day.diet_done}
             onToggle={() => updateDay({ diet_done: !day.diet_done })}
-          />
-
-          {/* Video diario */}
-          <TaskCard
-            icon="🎥"
-            label="Video — @santimeza.ads"
-            done={day.insight_done}
-            onToggle={() =>
-              updateDay({
-                insight_done: !day.insight_done,
-                insight_minutes: !day.insight_done ? 1 : 0,
-              })
-            }
           />
 
           {/* Lectura */}
