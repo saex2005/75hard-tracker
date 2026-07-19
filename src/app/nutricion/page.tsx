@@ -305,13 +305,14 @@ function TabMealPrep() {
 const RECIPE_FILTERS = ['Todas', 'Desayuno', 'Almuerzo', 'Merienda', 'Cena'] as const
 type RecipeFilter = (typeof RECIPE_FILTERS)[number]
 
-// Qué meal slot(s) del tracker corresponden a cada receta. Las 9 originales
-// "Almuerzo o cena" ofrecen los dos botones — el resto es 1 a 1.
+// Qué meal slot(s) del tracker corresponden a cada receta. Son todas del
+// mismo batch cooking semanal y se comen indistintamente al mediodía o a la
+// noche, así que "Cena" y "Almuerzo o cena" ofrecen los mismos dos botones.
 const MEAL_SLOTS: Record<string, MealSlot[]> = {
   Desayuno: ['desayuno'],
   Almuerzo: ['almuerzo'],
   Merienda: ['merienda'],
-  Cena: ['cena'],
+  Cena: ['almuerzo', 'cena'],
   'Almuerzo o cena': ['almuerzo', 'cena'],
 }
 const MEAL_SLOT_LABEL: Record<MealSlot, string> = {
