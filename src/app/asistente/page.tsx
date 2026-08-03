@@ -340,7 +340,14 @@ export default function AsistentePage() {
   }
 
   return (
-    <main className="max-w-md mx-auto flex flex-col h-full">
+    <div
+      className="fixed inset-x-0 z-10 flex flex-col bg-bg"
+      style={{
+        top: 'env(safe-area-inset-top, 0px)',
+        bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))',
+      }}
+    >
+    <main className="max-w-md mx-auto w-full h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-6 pb-3 shrink-0">
         <div>
@@ -603,6 +610,7 @@ export default function AsistentePage() {
         </form>
       </div>
     </main>
+    </div>
   )
 }
 
