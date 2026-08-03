@@ -110,6 +110,11 @@
 
   { "name": "Asado de tira cocido (costilla vacuna)", "kcal_100": 290, "protein_100": 25, "carbs_100": 0, "fat_100": 21, "source_ref": "SARA 2 — carnes" },
   { "name": "Vacío cocido", "kcal_100": 220, "protein_100": 28, "carbs_100": 0, "fat_100": 12, "source_ref": "SARA 2 — carnes" },
+  { "name": "Tapa de asado cocida (parrilla)", "kcal_100": 290, "protein_100": 26, "carbs_100": 0, "fat_100": 21, "source_ref": "FatSecret/Fitia — tapa de asado, corregido de estimado inicial (subestimaba grasa)" },
+  { "name": "Entraña cocida (parrilla)", "kcal_100": 255, "protein_100": 23.5, "carbs_100": 0, "fat_100": 17, "source_ref": "Promedio Fitia/FatSecret/InstructorJP — entraña vacuna" },
+  { "name": "Matambre de vaca cocido", "kcal_100": 190, "protein_100": 27, "carbs_100": 0, "fat_100": 7, "source_ref": "Estimado — proteína cruda Fichas MAGyP (18-21g/100g) ajustada por pérdida de agua en cocción, grasa según capa fina característica del corte" },
+  { "name": "Colita de cuadril cocida", "kcal_100": 174, "protein_100": 21, "carbs_100": 0, "fat_100": 10, "source_ref": "MyFitnessPal/Fitia — colita de cuadril" },
+  { "name": "Bondiola de cerdo cocida", "kcal_100": 260, "protein_100": 16, "carbs_100": 0, "fat_100": 21, "source_ref": "FatSecret — bondiola de cerdo (COTO/Paladini)" },
   { "name": "Chorizo parrillero cocido", "kcal_100": 330, "protein_100": 17, "carbs_100": 2, "fat_100": 28, "source_ref": "SARA 2 — embutidos", "serving_g": 60, "serving_name": "1 unidad (60 g)" },
   { "name": "Morcilla cocida", "kcal_100": 240, "protein_100": 13, "carbs_100": 3, "fat_100": 20, "source_ref": "SARA 2 — embutidos", "serving_g": 70, "serving_name": "1 unidad (70 g)" },
   { "name": "Choripán (chorizo + pan francés)", "kcal_100": 290, "protein_100": 12, "carbs_100": 22, "fat_100": 17, "source_ref": "Calculado SARA 2 (chorizo 60g + pan 90g)", "serving_g": 150, "serving_name": "1 unidad (150 g)" },

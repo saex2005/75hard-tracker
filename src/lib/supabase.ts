@@ -71,6 +71,8 @@ export type ChatMessageRow = {
   id: string
   role: 'user' | 'assistant'
   content: string
+  image_url: string | null
+  audio_url: string | null
   created_at: string
 }
 
@@ -230,12 +232,16 @@ export type Database = {
           id?: string
           role: 'user' | 'assistant'
           content: string
+          image_url?: string | null
+          audio_url?: string | null
           created_at?: string
         }
         Update: {
           id?: string
           role?: 'user' | 'assistant'
           content?: string
+          image_url?: string | null
+          audio_url?: string | null
           created_at?: string
         }
         Relationships: []

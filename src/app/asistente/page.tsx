@@ -2,9 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { cn, todayART, yesterdayART } from '@/lib/utils'
+import { supabase } from '@/lib/supabase'
 
-type ChatMessage = { role: 'user' | 'assistant'; content: string; created_at?: string }
+type ChatMessage = {
+  role: 'user' | 'assistant'
+  content: string
+  image_url?: string | null
+  audio_url?: string | null
+  created_at?: string
+}
 type MenuState = { index: number; x: number; y: number } | null
+type Attachment = { kind: 'image'; url: string; file: File } | null
 
 // "Nueva charla" no borra nada del server (memoria constante) — solo oculta
 // los mensajes anteriores a este cutoff en la vista de este dispositivo.
@@ -44,13 +52,22 @@ export default function AsistentePage() {
   const [loaded, setLoaded] = useState(false)
   const [showScrollBtn, setShowScrollBtn] = useState(false)
   const [menu, setMenu] = useState<MenuState>(null)
+  const [attachment, setAttachment] = useState<Attachment>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [recording, setRecording] = useState(false)
+  const [transcribing, setTranscribing] = useState(false)
+  const [attachError, setAttachError] = useState<string | null>(null)
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const atBottomRef = useRef(true)
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
+  const recordingStreamRef = useRef<MediaStream | null>(null)
 
   // Auto-grow del textarea (estilo iMessage/WhatsApp) — máximo ~6 líneas, después scroll interno
   useEffect(() => {
@@ -109,14 +126,24 @@ export default function AsistentePage() {
   }
 
   const send = useCallback(
-    async (text: string) => {
+    async (text: string, opts?: { imageUrl?: string; audioUrl?: string }) => {
       const content = text.trim()
-      if (!content || streaming) return
+      if ((!content && !opts?.imageUrl) || streaming) return
       setError(null)
       setInput('')
+      setAttachment(null)
       // Al enviar, siempre bajás al fondo — igual que WhatsApp
       atBottomRef.current = true
-      setMessages((prev) => [...prev, { role: 'user', content, created_at: new Date().toISOString() }])
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'user',
+          content,
+          image_url: opts?.imageUrl ?? null,
+          audio_url: opts?.audioUrl ?? null,
+          created_at: new Date().toISOString(),
+        },
+      ])
       setStreaming(true)
 
       const controller = new AbortController()
@@ -126,7 +153,7 @@ export default function AsistentePage() {
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: content }),
+          body: JSON.stringify({ message: content, imageUrl: opts?.imageUrl, audioUrl: opts?.audioUrl }),
           signal: controller.signal,
         })
         if (!res.ok || !res.body) {
@@ -176,6 +203,114 @@ export default function AsistentePage() {
     } catch {}
   }
 
+  // ---------- Adjuntar foto (ej. etiqueta nutricional en el súper) ----------
+
+  function handlePickImage(file: File) {
+    setAttachError(null)
+    if (!file.type.startsWith('image/')) {
+      setAttachError('Solo se aceptan imágenes.')
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setAttachError('La imagen no puede superar 10 MB.')
+      return
+    }
+    setAttachment({ kind: 'image', url: URL.createObjectURL(file), file })
+  }
+
+  async function uploadAttachment(): Promise<string | null> {
+    if (!attachment) return null
+    setUploadingImage(true)
+    try {
+      const ext = attachment.file.name.split('.').pop() ?? 'jpg'
+      const path = `images/${Date.now()}.${ext}`
+      const { error: uploadError } = await supabase.storage
+        .from('chat-media')
+        .upload(path, attachment.file, { upsert: true })
+      if (uploadError) throw uploadError
+      const { data } = supabase.storage.from('chat-media').getPublicUrl(path)
+      return data.publicUrl
+    } catch {
+      setAttachError('Error al subir la imagen. Intentá de nuevo.')
+      return null
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
+  async function sendWithAttachment() {
+    if (!attachment || streaming || uploadingImage) return
+    const text = input
+    const url = await uploadAttachment()
+    if (!url) return
+    send(text, { imageUrl: url })
+  }
+
+  // ---------- Nota de voz: grabar, subir y transcribir (Groq Whisper) ----------
+
+  async function startRecording() {
+    setAttachError(null)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      recordingStreamRef.current = stream
+      audioChunksRef.current = []
+      const recorder = new MediaRecorder(stream)
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data)
+      }
+      recorder.start()
+      mediaRecorderRef.current = recorder
+      setRecording(true)
+    } catch {
+      setAttachError('No se pudo acceder al micrófono.')
+    }
+  }
+
+  function stopRecording() {
+    const recorder = mediaRecorderRef.current
+    if (!recorder) return
+    recorder.onstop = async () => {
+      recordingStreamRef.current?.getTracks().forEach((t) => t.stop())
+      recordingStreamRef.current = null
+      setRecording(false)
+
+      const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' })
+      if (blob.size === 0) return
+      setTranscribing(true)
+      try {
+        const ext = blob.type.includes('mp4') ? 'm4a' : 'webm'
+        const path = `audio/${Date.now()}.${ext}`
+
+        const [uploadResult, transcribeResult] = await Promise.all([
+          supabase.storage.from('chat-media').upload(path, blob, { upsert: true }),
+          fetch('/api/transcribe', {
+            method: 'POST',
+            body: (() => {
+              const form = new FormData()
+              form.append('audio', blob, `audio.${ext}`)
+              return form
+            })(),
+          }).then((res) => res.json().catch(() => ({}))),
+        ])
+
+        if (uploadResult.error) throw uploadResult.error
+        const { data } = supabase.storage.from('chat-media').getPublicUrl(path)
+
+        const transcribed = (transcribeResult?.text ?? '').trim()
+        if (!transcribed) {
+          setAttachError('No se entendió el audio. Probá de nuevo o escribilo.')
+          return
+        }
+        send(transcribed, { audioUrl: data.publicUrl })
+      } catch {
+        setAttachError('Error al procesar la nota de voz.')
+      } finally {
+        setTranscribing(false)
+      }
+    }
+    recorder.stop()
+  }
+
   // Copiar mensaje — mantener apretado (mobile) o click derecho (desktop),
   // igual que el menú de "Copiar / Reenviar / Eliminar" de WhatsApp. Acá solo
   // aplica Copiar: no hay hilos, contactos ni chats para reenviar/responder.
@@ -205,7 +340,7 @@ export default function AsistentePage() {
   }
 
   return (
-    <main className="max-w-md mx-auto flex flex-col h-dvh pb-16">
+    <main className="max-w-md mx-auto flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-6 pb-3 shrink-0">
         <div>
@@ -273,6 +408,17 @@ export default function AsistentePage() {
                       : cn('bg-[#141414] border border-[#262626] text-[#E4E4E7]', isLastOfGroup && 'rounded-bl-md')
                   )}
                 >
+                  {m.image_url && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={m.image_url}
+                      alt="Imagen adjunta"
+                      className={cn('rounded-lg max-h-64 w-auto object-contain mb-1.5', m.content && 'mb-2')}
+                    />
+                  )}
+                  {m.audio_url && (
+                    <audio controls src={m.audio_url} className="w-56 max-w-full mb-1.5 h-9" />
+                  )}
                   {m.content || (
                     <span className="inline-flex gap-1 py-1" aria-label="Pensando">
                       <Dot delay="0ms" />
@@ -336,45 +482,126 @@ export default function AsistentePage() {
       )}
 
       {/* Input */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          send(input)
-        }}
-        className="shrink-0 px-4 pb-3 pt-2 border-t border-[#1C1C1C] flex gap-2"
-      >
-        <textarea
-          ref={textareaRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            // Enter envía, Shift+Enter hace salto de línea (igual que la mayoría de los chats)
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault()
-              send(input)
-            }
+      <div className="shrink-0 border-t border-[#1C1C1C]">
+        {/* Preview de la imagen adjunta antes de enviar */}
+        {attachment && (
+          <div className="px-4 pt-2 flex items-center gap-2">
+            <div className="relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={attachment.url} alt="Adjunto" className="h-16 w-16 object-cover rounded-lg border border-[#262626]" />
+              <button
+                type="button"
+                onClick={() => setAttachment(null)}
+                aria-label="Quitar imagen"
+                className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-[#262626] text-[#FAFAFA] text-xs flex items-center justify-center"
+              >
+                ✕
+              </button>
+            </div>
+            {uploadingImage && <span className="text-xs text-[#52525B] font-medium">Subiendo…</span>}
+          </div>
+        )}
+
+        {(attachError || transcribing) && (
+          <div className="px-4 pt-2">
+            {attachError && <p className="text-xs text-red-400 font-medium">{attachError}</p>}
+            {transcribing && <p className="text-xs text-[#52525B] font-medium">Transcribiendo audio…</p>}
+          </div>
+        )}
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (attachment) sendWithAttachment()
+            else send(input)
           }}
-          placeholder="Escribí acá…"
-          rows={1}
-          enterKeyHint="send"
-          autoCapitalize="sentences"
-          autoCorrect="on"
-          spellCheck
-          // Al cerrar el teclado, iOS a veces deja la página corrida — reacomodar
-          onBlur={() => setTimeout(() => window.scrollTo(0, 0), 50)}
-          className="flex-1 resize-none max-h-36 rounded-xl bg-[#141414] border border-[#262626] px-4 py-2.5 text-base leading-[1.4] text-[#FAFAFA] placeholder-[#3F3F46] outline-none focus:border-accent transition-colors"
-        />
-        <button
-          type="submit"
-          disabled={!input.trim() || streaming}
-          aria-label="Enviar"
-          className="h-11 w-11 shrink-0 self-end rounded-xl bg-accent text-black font-black disabled:opacity-40 transition-transform active:scale-[0.96] flex items-center justify-center"
+          className="px-4 pb-3 pt-2 flex gap-2 items-end"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M5 12L19 12M19 12L13 6M19 12L13 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      </form>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            aria-label="Adjuntar imagen"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) handlePickImage(file)
+              e.target.value = ''
+            }}
+          />
+
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={streaming || recording || transcribing}
+            aria-label="Adjuntar imagen"
+            className="h-11 w-11 shrink-0 rounded-xl bg-[#141414] border border-[#262626] disabled:opacity-40 flex items-center justify-center active:scale-[0.96] transition-transform"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M21.44 11.05l-9.19 9.19a5 5 0 01-7.07-7.07l9.19-9.19a3.5 3.5 0 014.95 4.95l-9.2 9.19a1.5 1.5 0 01-2.12-2.12l8.49-8.49" stroke="#A1A1AA" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              // Enter envía, Shift+Enter hace salto de línea (igual que la mayoría de los chats)
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                if (attachment) sendWithAttachment()
+                else send(input)
+              }
+            }}
+            placeholder={attachment ? 'Agregá un mensaje (opcional)…' : 'Escribí acá…'}
+            rows={1}
+            enterKeyHint="send"
+            autoCapitalize="sentences"
+            autoCorrect="on"
+            spellCheck
+            disabled={recording}
+            // Al cerrar el teclado, iOS a veces deja la página corrida — reacomodar
+            onBlur={() => setTimeout(() => window.scrollTo(0, 0), 50)}
+            className="flex-1 resize-none max-h-36 rounded-xl bg-[#141414] border border-[#262626] px-4 py-2.5 text-base leading-[1.4] text-[#FAFAFA] placeholder-[#3F3F46] outline-none focus:border-accent transition-colors disabled:opacity-40"
+          />
+
+          {!input.trim() && !attachment ? (
+            <button
+              type="button"
+              onClick={recording ? stopRecording : startRecording}
+              disabled={streaming || transcribing}
+              aria-label={recording ? 'Detener grabación' : 'Grabar audio'}
+              className={cn(
+                'h-11 w-11 shrink-0 rounded-xl font-black disabled:opacity-40 transition-transform active:scale-[0.96] flex items-center justify-center',
+                recording ? 'bg-red-500 text-white animate-pulse' : 'bg-[#141414] border border-[#262626]'
+              )}
+            >
+              {recording ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <rect x="5" y="5" width="14" height="14" rx="2" />
+                </svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 15a3 3 0 003-3V6a3 3 0 10-6 0v6a3 3 0 003 3z" stroke="#A1A1AA" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M19 11a7 7 0 01-14 0M12 18v3" stroke="#A1A1AA" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={(!input.trim() && !attachment) || streaming || uploadingImage}
+              aria-label="Enviar"
+              className="h-11 w-11 shrink-0 rounded-xl bg-accent text-black font-black disabled:opacity-40 transition-transform active:scale-[0.96] flex items-center justify-center"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M5 12L19 12M19 12L13 6M19 12L13 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          )}
+        </form>
+      </div>
     </main>
   )
 }

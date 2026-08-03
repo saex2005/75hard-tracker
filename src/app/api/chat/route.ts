@@ -264,7 +264,7 @@ export async function GET(req: NextRequest) {
   }
   const { data, error } = await supabase
     .from('chat_messages')
-    .select('role, content, created_at')
+    .select('role, content, image_url, audio_url, created_at')
     .order('created_at', { ascending: false })
     .limit(UI_MESSAGES)
   if (error) {
@@ -285,7 +285,11 @@ export async function POST(req: NextRequest) {
   }
 
   // Acepta { message } (cliente nuevo) o { messages: [...] } (cliente viejo cacheado por la PWA)
+  // + { imageUrl } (foto adjunta, ya subida a Supabase Storage) y/o { audioUrl } (nota de voz,
+  // ya subida + transcripta client-side — el texto de la transcripción viaja en `message`)
   let userMessage = ''
+  let imageUrl: string | undefined
+  let audioUrl: string | undefined
   try {
     const body = await req.json()
     if (typeof body.message === 'string') {
@@ -294,10 +298,14 @@ export async function POST(req: NextRequest) {
       const last = body.messages[body.messages.length - 1]
       if (last?.role === 'user' && typeof last.content === 'string') userMessage = last.content.trim()
     }
-    if (!userMessage) throw new Error()
+    if (typeof body.imageUrl === 'string' && body.imageUrl) imageUrl = body.imageUrl
+    if (typeof body.audioUrl === 'string' && body.audioUrl) audioUrl = body.audioUrl
+    if (!userMessage && !imageUrl) throw new Error()
   } catch {
     return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
   }
+  // Foto sin caption: dale al modelo algo para arrancar
+  if (!userMessage && imageUrl) userMessage = '¿Qué te parece esto?'
 
   // Contexto: últimos mensajes desde la DB (memoria constante) + el mensaje nuevo.
   // Si la tabla no existe, sigue con historial vacío.
@@ -309,13 +317,25 @@ export async function POST(req: NextRequest) {
   const history = (historyRes.data ?? []).reverse()
   while (history.length && history[0].role !== 'user') history.shift() // el primer mensaje debe ser user
 
+  // La imagen solo se manda al modelo en el turno actual (no se re-envían fotos viejas del
+  // historial en cada request); el historial de turnos pasados sigue siendo solo texto.
+  const newUserContent: Anthropic.MessageParam['content'] = imageUrl
+    ? [
+        { type: 'image', source: { type: 'url', url: imageUrl } },
+        { type: 'text', text: userMessage },
+      ]
+    : userMessage
+
   const messages: Anthropic.MessageParam[] = [
     ...history.map((m) => ({ role: m.role, content: m.content })),
-    { role: 'user' as const, content: userMessage },
+    { role: 'user' as const, content: newUserContent },
   ]
 
   // Log del mensaje del usuario (best-effort: un fallo acá no corta el chat)
-  supabase.from('chat_messages').insert({ role: 'user', content: userMessage }).then(() => {})
+  supabase
+    .from('chat_messages')
+    .insert({ role: 'user', content: userMessage, image_url: imageUrl ?? null, audio_url: audioUrl ?? null })
+    .then(() => {})
 
   let liveState = ''
   try {

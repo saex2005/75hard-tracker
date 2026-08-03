@@ -795,6 +795,5 @@ export const DIET_RULES = [
   'Cero alcohol',
   'Cero sushi — queda para el día 76',
   'Proteína en cada comida',
-  'Meal prep domingo y miércoles, sin excepción',
   'Si es ambiguo, no se come',
 ]

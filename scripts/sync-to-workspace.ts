@@ -15,10 +15,11 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 async function sync() {
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
-  const [{ data: cs }, { data: days }, { data: weights }] = await Promise.all([
+  const [{ data: cs }, { data: days }, { data: weights }, { count: completedDays }] = await Promise.all([
     supabase.from('challenge_state').select('*').eq('id', 1).single(),
     supabase.from('days').select('*').order('day_number', { ascending: false }).limit(10),
     supabase.from('weight_checkpoints').select('*').order('date', { ascending: false }).limit(5),
+    supabase.from('days').select('*', { count: 'exact', head: true }).eq('completed', true),
   ])
 
   if (!cs) {
@@ -27,7 +28,6 @@ async function sync() {
   }
 
   const dayNumber = differenceInDays(new Date(), parseISO(cs.current_run_start)) + 1
-  const completedDays = days?.filter((d) => d.completed).length ?? 0
 
   const dayLog = days
     ?.slice(0, 7)
@@ -52,7 +52,7 @@ async function sync() {
 ## Progreso del reto
 
 - **Día actual:** ${dayNumber} de 75
-- **Días completados:** ${completedDays}
+- **Días completados:** ${completedDays ?? 0}
 - **Mejor racha:** ${cs.best_streak} días
 - **Reintentos:** ${cs.total_restarts}
 - **Inicio de racha actual:** ${format(parseISO(cs.current_run_start), 'dd/MM/yyyy')}
@@ -90,10 +90,9 @@ function tasks(d: Record<string, unknown>): string {
   if (d.cardio_done) t.push('cardio')
   if (Number(d.water_bottles) >= 4) t.push('agua')
   if (d.diet_done) t.push('dieta')
-  if (d.insight_done) t.push('insightmkt')
   if (d.reading_done) t.push('lectura')
   if (d.photo_url) t.push('foto')
-  return `${t.length}/7 ${t.join(', ')}`
+  return `${t.length}/6 ${t.join(', ')}`
 }
 
 sync().catch(console.error)
