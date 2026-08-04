@@ -347,7 +347,7 @@ export default function AsistentePage() {
         bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))',
       }}
     >
-    <main className="max-w-md mx-auto w-full h-full flex flex-col">
+    <main className="max-w-md mx-auto w-full h-full min-h-0 flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-6 pb-3 shrink-0">
         <div>
@@ -365,7 +365,7 @@ export default function AsistentePage() {
       </div>
 
       {/* Mensajes */}
-      <div ref={containerRef} onScroll={handleScroll} className="relative flex-1 overflow-y-auto px-4 pb-3">
+      <div ref={containerRef} onScroll={handleScroll} className="relative flex-1 min-h-0 overflow-y-auto px-4 pb-3">
         {messages.length === 0 && loaded && (
           <div className="pt-8 space-y-2">
             <p className="text-sm text-[#52525B] font-medium text-center mb-4">
