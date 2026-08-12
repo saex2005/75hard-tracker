@@ -427,6 +427,63 @@ export const RECIPES: Recipe[] = [
     macros: { kcal: 604, protein: 46, carbs: 61, fat: 19 },
   },
 
+  {
+    name: 'Empanadas de carne al horno (4 u.)',
+    meal: 'Almuerzo o cena',
+    time: '35 min (rinde 4 empanadas)',
+    batch: ['4 tapas Bulnes (25 g c/u, 100 g total) — etiqueta real: 72 kcal/1.7P/13C/1.6G cada tapa'],
+    extras: [
+      '160 g de carne picada magra (nalga o cuadrada, 90/10), cocida',
+      '60 g de cebolla picada',
+      '1 huevo duro picado (40 g), opcional',
+      'Comino y pimentón a gusto',
+    ],
+    steps: [
+      'Dorar la carne picada en sartén sin aceite con la cebolla hasta que esté bien cocida y se evapore el líquido',
+      'Sacar del fuego, sumar el huevo duro picado y las especias, dejar entibiar',
+      'Rellenar las tapas Bulnes, cerrar y hacer el repulgue',
+      'Horno precalentado a 180-200°C, placa apenas rociada, 15-20 min hasta que doren',
+      'Si usás tapa Rotiseras en vez de Bulnes: sube a ~244 kcal/15.1P/19.5C/11.4G por unidad (más grasa por la margarina) — ajustá la cantidad',
+    ],
+    macros: { kcal: 708, protein: 56, carbs: 58, fat: 28 },
+  },
+  {
+    name: 'Empanadas de pollo al horno (4 u.)',
+    meal: 'Almuerzo o cena',
+    time: '35 min (rinde 4 empanadas)',
+    batch: ['4 tapas Bulnes (25 g c/u, 100 g total) — etiqueta real: 72 kcal/1.7P/13C/1.6G cada tapa'],
+    extras: [
+      '160 g de pechuga de pollo cocida, desmenuzada',
+      '60 g de cebolla picada',
+      'Comino, pimentón y ajo en polvo a gusto',
+    ],
+    steps: [
+      'Saltear la pechuga desmenuzada con la cebolla en sartén sin aceite hasta que la cebolla transparente',
+      'Condimentar y dejar entibiar antes de rellenar',
+      'Rellenar las tapas Bulnes, cerrar y hacer el repulgue',
+      'Horno precalentado a 180-200°C, placa apenas rociada, 15-20 min hasta que doren',
+      'La variante más liviana en grasa de las tres — buena opción de cena si el día ya gastó margen de grasa',
+    ],
+    macros: { kcal: 576, protein: 57, carbs: 58, fat: 12 },
+  },
+  {
+    name: 'Empanadas de jamón y queso al horno (4 u.)',
+    meal: 'Almuerzo o cena',
+    time: '25 min (rinde 4 empanadas)',
+    batch: ['4 tapas Bulnes (25 g c/u, 100 g total) — etiqueta real: 72 kcal/1.7P/13C/1.6G cada tapa'],
+    extras: [
+      '80 g de jamón cocido natural (sin aditivos, tipo fiambrería), en cubitos',
+      '80 g de queso port salut (real, marca comprada — etiqueta: 310 kcal/20P/1C/24G cada 100g)',
+    ],
+    steps: [
+      'Cortar el jamón y el queso en cubitos chicos',
+      'Rellenar las tapas Bulnes con la mezcla en frío, cerrar y hacer el repulgue',
+      'Horno precalentado a 180-200°C, placa apenas rociada, 12-15 min hasta que funda el queso y doren',
+      'La más golosa de las tres por el queso — la que más conviene combinar con una ensalada aparte para sumar volumen sin kcal',
+    ],
+    macros: { kcal: 628, protein: 38, carbs: 54, fat: 29 },
+  },
+
   // ── Desayuno (~650 kcal / 35 g P) ──
   {
     name: 'Panqueque proteico de avena',
