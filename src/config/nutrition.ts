@@ -730,6 +730,20 @@ export const RECIPES: Recipe[] = [
     ],
     macros: { kcal: 408, protein: 38, carbs: 57, fat: 4 },
   },
+  {
+    name: 'Arepa con queso port salut y yogur',
+    meal: 'Desayuno o merienda',
+    time: '10 min',
+    batch: [],
+    extras: ['50 g de harina de arepa (seca)', '30 g de queso port salut clásico', '175 g de yogur (sin azúcares añadidos)'],
+    steps: [
+      'Amasar la harina de arepa con agua y armar la arepa mediana',
+      'Cocinar en sartén o plancha, ponerle el queso port salut arriba a fundir',
+      'El yogur aparte',
+      'Práctica para viajes o días sin cocina (surgió en el viaje a Córdoba, 16/08)',
+    ],
+    macros: { kcal: 398, protein: 24.6, carbs: 53.3, fat: 10.4 },
+  },
 
   // ── Cena (~550 kcal / 50 g P) ──
   {
