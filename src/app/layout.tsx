@@ -17,13 +17,13 @@ const geistMono = localFont({
 })
 
 export const metadata: Metadata = {
-  title: '75 Hard',
-  description: 'Tracker personal del reto 75 Hard',
+  title: '100 Días',
+  description: 'Tracker personal del reto 100 Días',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: '75 Hard',
+    title: '100 Días',
   },
 }
 

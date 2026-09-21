@@ -1,13 +1,10 @@
 export const CHALLENGE_CONFIG = {
-  startDate: '2026-07-07',
-  totalDays: 75,
-  bottleSizeMl: 1000,
-  dailyWaterGoalL: 3.785, // 1 galón
-  book: 'The Way of the Superior Man',
+  startDate: '2026-09-23',
+  endDate: '2026-12-31', // techo absoluto — un reset nunca puede correr más allá de esta fecha
+  totalDays: 100,
+  studyBlockMinutes: 90,
+  trainingMinutes: 45,
   dailyPagesGoal: 10,
+  stepsGoal: 10000,
+  cycleLengthDays: 14,
 } as const
-
-// botellas por día = ceil(3785 / bottleSizeMl)
-export const BOTTLES_PER_DAY = Math.ceil(
-  (CHALLENGE_CONFIG.dailyWaterGoalL * 1000) / CHALLENGE_CONFIG.bottleSizeMl
-)

@@ -72,6 +72,9 @@ export default function FotosPage() {
       <header className="mb-6">
         <h1 className="text-3xl font-black tracking-tight">Fotos</h1>
         <p className="text-sm text-[#A1A1AA] mt-1">{days.length} fotos de progreso</p>
+        <p className="text-xs text-[#52525B] mt-1">
+          Historial del 75 Hard — el reto 100 Días no incluye foto diaria.
+        </p>
       </header>
 
       {/* Comparador: Día 1 vs hoy (o los días que elijas) */}

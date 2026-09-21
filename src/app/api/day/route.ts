@@ -33,9 +33,8 @@ export async function GET(request: NextRequest) {
 
 // Solo campos de tasks — date/day_number/id no se tocan por API
 const PATCHABLE = [
-  'gym_done', 'gym_minutes', 'cardio_done', 'cardio_minutes', 'water_bottles',
-  'diet_done', 'reading_done', 'reading_page', 'photo_url',
-  'insight_done', 'insight_minutes', 'completed',
+  'study_block_done', 'study_block_minutes', 'gym_done', 'gym_minutes',
+  'reading_done', 'reading_page', 'steps', 'completed',
 ] as const
 
 export async function PATCH(request: NextRequest) {

@@ -4,29 +4,30 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { supabase, type DayRecord, type ChallengeState } from '@/lib/supabase'
+import { differenceInDays, parseISO } from 'date-fns'
+import { supabase, type DayRecord, type ChallengeState, type StudyCycle } from '@/lib/supabase'
 import { calcDayNumber, todayISO, yesterdayART, isDayComplete } from '@/lib/utils'
 import { getSessionForDate, SESSION_LABELS } from '@/config/gym'
 import { cacheDay, cacheChallengeState, getCachedDay, getCachedChallengeState, enqueue, getQueue, clearQueue } from '@/lib/offlineCache'
-import { CHALLENGE_CONFIG, BOTTLES_PER_DAY } from '@/config/challenge'
+import { CHALLENGE_CONFIG } from '@/config/challenge'
 import ProgressBar from '@/components/ProgressBar'
 import TaskCard from '@/components/TaskCard'
-import WaterCounter from '@/components/WaterCounter'
 import MinutePicker from '@/components/MinutePicker'
 import DayFailed from '@/components/DayFailed'
-import PhotoUpload from '@/components/PhotoUpload'
+import CycleCloseForm from '@/components/CycleCloseForm'
 
 type AppState =
   | { status: 'loading' }
   | { status: 'pending'; startDate: string; daysLeft: number }
   | { status: 'failed'; dayNumber: number; streak: number }
   | { status: 'complete' }
-  | { status: 'active'; day: DayRecord; challengeState: ChallengeState; dayNumber: number }
+  | { status: 'active'; day: DayRecord; challengeState: ChallengeState; cycle: StudyCycle | null; dayNumber: number }
   | { status: 'error'; message: string }
 
 export default function HomePage() {
   const [state, setState] = useState<AppState>({ status: 'loading' })
   const [saving, setSaving] = useState(false)
+  const [syncingSteps, setSyncingSteps] = useState(false)
   const [restartLoading, setRestartLoading] = useState(false)
 
   const loadData = useCallback(async () => {
@@ -43,7 +44,7 @@ export default function HomePage() {
       const cachedCs = getCachedChallengeState()
       if (cachedDay && cachedCs) {
         const dn = calcDayNumber(cachedCs.current_run_start)
-        setState({ status: 'active', day: cachedDay, challengeState: cachedCs, dayNumber: dn })
+        setState({ status: 'active', day: cachedDay, challengeState: cachedCs, cycle: null, dayNumber: dn })
       } else {
         setState({ status: 'error', message: csError?.message ?? 'Sin datos en challenge_state' })
       }
@@ -57,12 +58,21 @@ export default function HomePage() {
       return
     }
 
-    if (dayNumber > CHALLENGE_CONFIG.totalDays) {
+    if (dayNumber > CHALLENGE_CONFIG.totalDays || todayISO() > CHALLENGE_CONFIG.endDate) {
       setState({ status: 'complete' })
       return
     }
 
-    // Detectar si el día anterior falló — pero si las 7 tasks estaban hechas
+    const todayDate = todayISO()
+
+    const { data: cycle } = await supabase
+      .from('study_cycles')
+      .select('*')
+      .lte('start_date', todayDate)
+      .gte('end_date', todayDate)
+      .maybeSingle()
+
+    // Detectar si el día anterior falló — si las 4 tasks estaban hechas
     // y solo faltó el flag, NO es un fallo (el cron lo cierra por red de seguridad)
     if (dayNumber > 1) {
       const yesterdayISO = yesterdayART()
@@ -73,13 +83,18 @@ export default function HomePage() {
         .eq('date', yesterdayISO)
         .single()
 
-      if (yDay && !yDay.completed && !isDayComplete(yDay)) {
+      const { data: yCycle } = await supabase
+        .from('study_cycles')
+        .select('*')
+        .lte('start_date', yesterdayISO)
+        .gte('end_date', yesterdayISO)
+        .maybeSingle()
+
+      if (yDay && !yDay.completed && !isDayComplete(yDay, yCycle ?? null)) {
         setState({ status: 'failed', dayNumber: dayNumber - 1, streak: dayNumber - 1 })
         return
       }
     }
-
-    const todayDate = todayISO()
 
     // Cargar o crear el día de hoy
     let { data: dayData } = await supabase
@@ -94,15 +109,13 @@ export default function HomePage() {
         .insert({
           day_number: dayNumber,
           date: todayDate,
+          study_block_done: false,
+          study_block_minutes: 0,
           gym_done: false,
           gym_minutes: 0,
-          cardio_done: false,
-          cardio_minutes: 0,
-          water_bottles: 0,
-          diet_done: false,
           reading_done: false,
           reading_page: 0,
-          photo_url: null,
+          steps: 0,
           completed: false,
         })
         .select()
@@ -128,8 +141,35 @@ export default function HomePage() {
 
     cacheDay(dayData)
     cacheChallengeState(cs)
-    setState({ status: 'active', day: dayData, challengeState: cs, dayNumber })
+    setState({ status: 'active', day: dayData, challengeState: cs, cycle: cycle ?? null, dayNumber })
+
+    // Sincronizar pasos de Oura en segundo plano al cargar "hoy"
+    syncSteps(todayDate, dayData, cycle ?? null)
   }, [])
+
+  async function syncSteps(date: string, currentDay: DayRecord, cycle: StudyCycle | null) {
+    setSyncingSteps(true)
+    try {
+      const res = await fetch('/api/oura/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date }),
+      })
+      if (res.ok) {
+        const updated: DayRecord = await res.json()
+        setState((prev) =>
+          prev.status === 'active' && prev.day.date === date
+            ? { ...prev, day: updated }
+            : prev
+        )
+        cacheDay(updated)
+      }
+    } catch {
+      // Sin Oura conectado todavía, o sin red — no bloquea el resto de la UI
+    } finally {
+      setSyncingSteps(false)
+    }
+  }
 
   useEffect(() => {
     loadData()
@@ -140,9 +180,9 @@ export default function HomePage() {
     const prev = state.day
     const optimistic = { ...prev, ...patch }
 
-    // Auto-cierre: `completed` es un derivado de las 7 tasks, en cada escritura.
+    // Auto-cierre: `completed` es un derivado de las 4 tasks, en cada escritura.
     // Se cierra solo al marcar la última y se reabre si desmarcás algo.
-    optimistic.completed = isDayComplete(optimistic)
+    optimistic.completed = isDayComplete(optimistic, state.cycle)
     const fullPatch = { ...patch, completed: optimistic.completed }
 
     let challengeState = state.challengeState
@@ -151,7 +191,7 @@ export default function HomePage() {
       challengeState = { ...challengeState, best_streak: state.dayNumber }
     }
 
-    setState({ status: 'active', day: optimistic, challengeState, dayNumber: state.dayNumber })
+    setState({ status: 'active', day: optimistic, challengeState, cycle: state.cycle, dayNumber: state.dayNumber })
     cacheDay(optimistic)
     cacheChallengeState(challengeState)
     setSaving(true)
@@ -164,7 +204,7 @@ export default function HomePage() {
 
     const { error } = await supabase.from('days').update(fullPatch).eq('id', prev.id)
     if (error) {
-      setState({ status: 'active', day: prev, challengeState: state.challengeState, dayNumber: state.dayNumber })
+      setState({ status: 'active', day: prev, challengeState: state.challengeState, cycle: state.cycle, dayNumber: state.dayNumber })
     } else if (justCompleted && state.dayNumber > state.challengeState.best_streak) {
       await supabase
         .from('challenge_state')
@@ -172,6 +212,32 @@ export default function HomePage() {
         .eq('id', 1)
     }
     setSaving(false)
+  }
+
+  async function closeCycle(payload: { topic: string; account: string; closing_doc: string }) {
+    if (state.status !== 'active' || !state.cycle) return
+    const closedCycle: StudyCycle = {
+      ...state.cycle,
+      topic: payload.topic,
+      account: payload.account,
+      closing_doc: payload.closing_doc,
+      closed: true,
+      closed_at: new Date().toISOString(),
+    }
+    setState({ ...state, cycle: closedCycle })
+    await supabase
+      .from('study_cycles')
+      .update({
+        topic: payload.topic,
+        account: payload.account,
+        closing_doc: payload.closing_doc,
+        closed: true,
+        closed_at: closedCycle.closed_at,
+      })
+      .eq('id', state.cycle.id)
+
+    // Recalcular completed del día con el ciclo ya cerrado
+    await updateDay({})
   }
 
   useEffect(() => {
@@ -230,7 +296,7 @@ export default function HomePage() {
         </div>
         <div className="space-y-2">
           <div className="h-3 w-24 bg-surface2 rounded animate-pulse mb-3" />
-          {[...Array(7)].map((_, i) => (
+          {[...Array(4)].map((_, i) => (
             <div key={i} className="h-[60px] bg-surface border border-[#262626] rounded-xl animate-pulse" />
           ))}
         </div>
@@ -257,7 +323,7 @@ export default function HomePage() {
     return (
       <div className="min-h-dvh flex flex-col items-center justify-center px-6 text-center space-y-3">
         <p className="text-accent text-xs font-mono tracking-[0.3em] uppercase">Próximamente</p>
-        <h1 className="text-4xl font-black tracking-tight">75 Hard</h1>
+        <h1 className="text-4xl font-black tracking-tight">100 Días</h1>
         <p className="text-[#A1A1AA] text-base">
           El reto empieza el <span className="text-[#FAFAFA] font-semibold">{formatted}</span>.
         </p>
@@ -288,15 +354,19 @@ export default function HomePage() {
         <p className="text-accent text-xs font-mono tracking-[0.3em] uppercase">
           Completado
         </p>
-        <h1 className="text-4xl font-black tracking-tight">75 días.</h1>
+        <h1 className="text-4xl font-black tracking-tight">100 días.</h1>
         <p className="text-[#A1A1AA] text-base">Terminaste el reto.</p>
       </div>
     )
   }
 
-  const { day, dayNumber } = state
-  const waterDone = day.water_bottles >= BOTTLES_PER_DAY
+  const { day, dayNumber, cycle } = state
+  const stepsDone = day.steps >= CHALLENGE_CONFIG.stepsGoal
   const todaySession = getSessionForDate(day.date)
+  const isCloseDay = !!cycle && cycle.end_date === day.date
+  const dayInCycle = cycle ? differenceInDays(parseISO(day.date), parseISO(cycle.start_date)) + 1 : 1
+  const isStudyDay = dayInCycle % 2 === 1
+  const studyLabel = isStudyDay ? 'Estudio — 90 min' : 'Implementación — 90 min'
 
   return (
     <main className="max-w-md mx-auto px-4 pt-6 pb-4 space-y-5" aria-label="Checklist del día">
@@ -304,7 +374,7 @@ export default function HomePage() {
       <header className="space-y-3">
         <div className="flex items-baseline justify-between">
           <h1 className="text-5xl font-black tracking-tighter">Día {dayNumber}</h1>
-          <span className="text-sm text-[#A1A1AA] font-mono">de 75</span>
+          <span className="text-sm text-[#A1A1AA] font-mono">de {CHALLENGE_CONFIG.totalDays}</span>
         </div>
         <ProgressBar current={dayNumber} total={CHALLENGE_CONFIG.totalDays} showLabel={false} />
         {dayNumber > 1 && (
@@ -324,15 +394,43 @@ export default function HomePage() {
         </h2>
 
         <div className="space-y-2">
-          {/* Gym */}
+          {/* Estudio/Implementación */}
+          <TaskCard
+            icon="📚"
+            label={studyLabel}
+            done={day.study_block_done}
+            onToggle={() =>
+              updateDay({
+                study_block_done: !day.study_block_done,
+                study_block_minutes: !day.study_block_done ? CHALLENGE_CONFIG.studyBlockMinutes : 0,
+              })
+            }
+          >
+            <div className="space-y-2">
+              {cycle && (
+                <p className="text-xs text-[#A1A1AA]">
+                  Ciclo {cycle.cycle_number} · {cycle.topic || 'sin tema definido'}
+                  {cycle.account ? ` · ${cycle.account}` : ''}
+                </p>
+              )}
+              {isCloseDay && !cycle?.closed && (
+                <CycleCloseForm onSubmit={closeCycle} />
+              )}
+              {isCloseDay && cycle?.closed && (
+                <p className="text-xs text-green-400 font-medium">✓ Ciclo cerrado</p>
+              )}
+            </div>
+          </TaskCard>
+
+          {/* Entrenamiento */}
           <TaskCard
             icon="💪"
-            label="Gym — 45 min"
+            label="Entrenamiento — 45 min"
             done={day.gym_done}
             onToggle={() =>
               updateDay({
                 gym_done: !day.gym_done,
-                gym_minutes: !day.gym_done ? 45 : 0,
+                gym_minutes: !day.gym_done ? CHALLENGE_CONFIG.trainingMinutes : 0,
               })
             }
           >
@@ -347,52 +445,11 @@ export default function HomePage() {
                 <MinutePicker
                   minutes={day.gym_minutes}
                   onChange={(n) => updateDay({ gym_minutes: n })}
-                  label="gym"
+                  label="entrenamiento"
                 />
               )}
             </div>
           </TaskCard>
-
-          {/* Cardio */}
-          <TaskCard
-            icon="🏃"
-            label="Cardio outdoor — 45 min"
-            done={day.cardio_done}
-            onToggle={() =>
-              updateDay({
-                cardio_done: !day.cardio_done,
-                cardio_minutes: !day.cardio_done ? 45 : 0,
-              })
-            }
-          >
-            {day.cardio_done && (
-              <MinutePicker
-                minutes={day.cardio_minutes}
-                onChange={(n) => updateDay({ cardio_minutes: n })}
-                label="cardio"
-              />
-            )}
-          </TaskCard>
-
-          {/* Agua */}
-          <TaskCard
-            icon="💧"
-            label="Agua — 1 galón"
-            done={waterDone}
-          >
-            <WaterCounter
-              bottles={day.water_bottles}
-              onChange={(n) => updateDay({ water_bottles: n })}
-            />
-          </TaskCard>
-
-          {/* Dieta */}
-          <TaskCard
-            icon="🥗"
-            label="Dieta — sin cheat meals"
-            done={day.diet_done}
-            onToggle={() => updateDay({ diet_done: !day.diet_done })}
-          />
 
           {/* Lectura */}
           <TaskCard
@@ -403,8 +460,8 @@ export default function HomePage() {
               updateDay({
                 reading_done: !day.reading_done,
                 reading_page: !day.reading_done
-                  ? (day.reading_page || 0) + 10
-                  : Math.max(0, (day.reading_page || 0) - 10),
+                  ? (day.reading_page || 0) + CHALLENGE_CONFIG.dailyPagesGoal
+                  : Math.max(0, (day.reading_page || 0) - CHALLENGE_CONFIG.dailyPagesGoal),
               })
             }
           >
@@ -415,22 +472,25 @@ export default function HomePage() {
             )}
           </TaskCard>
 
-          {/* Foto */}
+          {/* Pasos */}
           <TaskCard
-            icon="📸"
-            label="Foto del día"
-            done={!!day.photo_url}
+            icon="👟"
+            label={`Pasos — ${day.steps.toLocaleString('es-AR')} / ${CHALLENGE_CONFIG.stepsGoal.toLocaleString('es-AR')}`}
+            done={stepsDone}
           >
-            <PhotoUpload
-              date={day.date}
-              currentUrl={day.photo_url}
-              onUploaded={(url) => updateDay({ photo_url: url })}
-            />
+            <button
+              type="button"
+              onClick={() => syncSteps(day.date, day, cycle)}
+              disabled={syncingSteps}
+              className="text-xs font-semibold text-accent hover:brightness-110 disabled:opacity-40"
+            >
+              {syncingSteps ? 'Sincronizando…' : 'Sincronizar con Oura'}
+            </button>
           </TaskCard>
         </div>
       </section>
 
-      {/* El día se cierra solo cuando las 7 tasks están completas */}
+      {/* El día se cierra solo cuando las 4 tasks están completas */}
       {day.completed && (
         <div className="text-center py-3 animate-slide-up" role="status" aria-live="polite">
           <p className="text-green-400 font-black text-base">✓ Día {dayNumber} completado</p>

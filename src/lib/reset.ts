@@ -1,14 +1,20 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '@/lib/supabase'
-import { todayART, yesterdayART, dayNumberFor, isDayComplete } from '@/lib/utils'
+import type { Database, StudyCycle } from '@/lib/supabase'
+import { todayART, yesterdayART, dayNumberFor, isDayComplete, isChallengeWindowOver } from '@/lib/utils'
 import { CHALLENGE_CONFIG } from '@/config/challenge'
 
 // Única lógica de cierre/reset del reto. La usan el cron (03:05) y el
 // notify evening (21:05) — nunca duplicar esto en otro lado.
 //
-// Red de seguridad: si ayer tiene las 6 tasks completas pero completed=false
+// Red de seguridad: si ayer tiene las 4 tasks completas pero completed=false
 // (no se tocó "cerrar" o falló el auto-cierre), se cierra en vez de resetear.
 // Solo se resetea cuando de verdad faltó una task.
+//
+// Techo absoluto: el reto "100 Días" corre 23/09→31/12/2026. Un reset nunca
+// puede hacer que siga corriendo después del 31/12, sin importar cuántas
+// veces se haya reseteado current_run_start — bug real detectado al cierre
+// del 75 Hard (el cron reseteó a "Día 1" el 21/09 porque no había fila para
+// el 20/09, un día en que el reto anterior ya había terminado).
 
 export type ResetResult = {
   reset: boolean
@@ -16,11 +22,29 @@ export type ResetResult = {
   reason: string
 }
 
+async function getCycleForDate(
+  supabase: SupabaseClient<Database>,
+  dateISO: string
+): Promise<StudyCycle | null> {
+  const { data } = await supabase
+    .from('study_cycles')
+    .select('*')
+    .lte('start_date', dateISO)
+    .gte('end_date', dateISO)
+    .maybeSingle()
+  return data ?? null
+}
+
 export async function checkAndReset(
   supabase: SupabaseClient<Database>
 ): Promise<ResetResult> {
   const todayISO = todayART()
   const yesterdayISO = yesterdayART()
+
+  // El reto ya terminó (fecha de calendario) — no resetear nunca más.
+  if (isChallengeWindowOver(todayISO)) {
+    return { reset: false, closedSafetyNet: false, reason: 'challenge window over' }
+  }
 
   const { data: cs } = await supabase
     .from('challenge_state')
@@ -45,8 +69,10 @@ export async function checkAndReset(
     return { reset: false, closedSafetyNet: false, reason: 'yesterday completed' }
   }
 
-  // Red de seguridad: las 6 tasks estaban, solo faltó el flag
-  if (yDay && isDayComplete(yDay)) {
+  const yCycle = await getCycleForDate(supabase, yesterdayISO)
+
+  // Red de seguridad: las 4 tasks estaban, solo faltó el flag
+  if (yDay && isDayComplete(yDay, yCycle)) {
     await supabase.from('days').update({ completed: true }).eq('id', yDay.id)
 
     const streak = dayNumberFor(yesterdayISO, cs.current_run_start)
@@ -78,6 +104,10 @@ export async function ensureTodayRow(
 ): Promise<{ dayNumber: number; active: boolean }> {
   const todayISO = todayART()
 
+  if (isChallengeWindowOver(todayISO)) {
+    return { dayNumber: 0, active: false }
+  }
+
   const { data: cs } = await supabase
     .from('challenge_state')
     .select('current_run_start')
@@ -101,15 +131,13 @@ export async function ensureTodayRow(
     await supabase.from('days').insert({
       day_number: dayNumber,
       date: todayISO,
+      study_block_done: false,
+      study_block_minutes: 0,
       gym_done: false,
       gym_minutes: 0,
-      cardio_done: false,
-      cardio_minutes: 0,
-      water_bottles: 0,
-      diet_done: false,
       reading_done: false,
       reading_page: 0,
-      photo_url: null,
+      steps: 0,
       completed: false,
     })
   } else if (existing.day_number !== dayNumber) {

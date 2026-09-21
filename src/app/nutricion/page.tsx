@@ -3,42 +3,15 @@
 import { useCallback, useEffect, useState } from 'react'
 import { DAILY_MACROS, MEAL_PREP, SHOPPING_LIST, EMERGENCY_MEALS, QUICK_MEALS, RECIPES, SEASONINGS, RECIPE_RULES } from '@/config/nutrition'
 import type { Recipe } from '@/config/nutrition'
-import { cn, todayISO, isDayComplete } from '@/lib/utils'
-import { supabase, type FoodLog, type MealSlot } from '@/lib/supabase'
+import { cn, todayISO } from '@/lib/utils'
+import type { FoodLog, MealSlot } from '@/lib/supabase'
 import MacroBars from '@/components/MacroBars'
 import FoodSearch, { type NewLogEntry } from '@/components/FoodSearch'
 import FoodLogList from '@/components/FoodLogList'
 
-// Comidas fijas del día — si las 4 tienen al menos un registro hoy, se
-// marca sola la task de dieta en el checklist (home). No desmarca sola si
-// borrás un registro después: la regla binaria la seguís definiendo vos.
-const REQUIRED_MEALS: MealSlot[] = ['desayuno', 'almuerzo', 'merienda', 'cena']
-
-async function checkAndMarkDiet(date: string) {
-  try {
-    const res = await fetch(`/api/food-log?date=${date}`)
-    if (!res.ok) return
-    const logs: FoodLog[] = await res.json()
-    const covered = new Set(logs.map((l) => l.meal))
-    if (!REQUIRED_MEALS.every((m) => covered.has(m))) return
-
-    const { data: day } = await supabase.from('days').select('*').eq('date', date).single()
-    if (!day || day.diet_done) return
-
-    const completed = isDayComplete({ ...day, diet_done: true })
-    const { error } = await supabase.from('days').update({ diet_done: true, completed }).eq('id', day.id)
-    if (error) return
-
-    if (completed && !day.completed) {
-      const { data: cs } = await supabase.from('challenge_state').select('*').eq('id', 1).single()
-      if (cs && day.day_number > cs.best_streak) {
-        await supabase.from('challenge_state').update({ best_streak: day.day_number }).eq('id', 1)
-      }
-    }
-  } catch {
-    // no bloquea el registro de comida si esto falla — se puede marcar manual
-  }
-}
+// Nota: la dieta quedó fuera del reto "100 Días" (Santiago la maneja a
+// conciencia, sin regla binaria) — este tracker de macros sigue disponible
+// como herramienta personal, pero ya no escribe nada en `days`/`diet_done`.
 
 type Tab = 'registro' | 'mealprep' | 'recetas' | 'compras' | 'emergencias'
 
@@ -151,7 +124,6 @@ function TabRegistro() {
         if (!res.ok) throw new Error()
         const saved: FoodLog = await res.json()
         setEntries((prev) => prev.map((e) => (e.id === tempId ? saved : e)))
-        checkAndMarkDiet(date)
       } catch {
         setEntries((prev) => prev.filter((e) => e.id !== tempId))
       }
@@ -373,7 +345,6 @@ function TabRecetas() {
         })
         if (!res.ok) throw new Error()
         setLoggedToday((prev) => new Set(prev).add(key))
-        checkAndMarkDiet(date)
       } catch {
         // se puede reintentar tocando el botón de nuevo
       } finally {

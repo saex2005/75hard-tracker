@@ -5,19 +5,42 @@ export type DayRecord = {
   id: string
   day_number: number
   date: string
+  // Reto "100 Días" (23/09/2026 en adelante)
+  study_block_done: boolean
+  study_block_minutes: number
   gym_done: boolean
   gym_minutes: number
+  reading_done: boolean
+  reading_page: number
+  steps: number
+  completed: boolean
+  created_at: string
+  // Campos del 75 Hard (historial, fechas < 23/09/2026 — no se escriben más)
   cardio_done: boolean
   cardio_minutes: number
   water_bottles: number
   diet_done: boolean
-  reading_done: boolean
-  reading_page: number
   photo_url: string | null
   insight_done: boolean
   insight_minutes: number
-  completed: boolean
-  created_at: string
+}
+
+export type StudyCycle = {
+  id: string
+  cycle_number: number
+  topic: string | null
+  account: string | null
+  start_date: string
+  end_date: string
+  closing_doc: string | null
+  closed: boolean
+  closed_at: string | null
+}
+
+export type OuraTokens = {
+  id: number
+  refresh_token: string
+  updated_at: string
 }
 
 export type WeightCheckpoint = {
@@ -102,37 +125,83 @@ export type Database = {
           id?: string
           day_number: number
           date: string
+          study_block_done?: boolean
+          study_block_minutes?: number
           gym_done?: boolean
           gym_minutes?: number
+          reading_done?: boolean
+          reading_page?: number
+          steps?: number
+          completed?: boolean
+          created_at?: string
           cardio_done?: boolean
           cardio_minutes?: number
           water_bottles?: number
           diet_done?: boolean
-          reading_done?: boolean
-          reading_page?: number
           photo_url?: string | null
           insight_done?: boolean
           insight_minutes?: number
-          completed?: boolean
-          created_at?: string
         }
         Update: {
           id?: string
           day_number?: number
           date?: string
+          study_block_done?: boolean
+          study_block_minutes?: number
           gym_done?: boolean
           gym_minutes?: number
+          reading_done?: boolean
+          reading_page?: number
+          steps?: number
+          completed?: boolean
+          created_at?: string
           cardio_done?: boolean
           cardio_minutes?: number
           water_bottles?: number
           diet_done?: boolean
-          reading_done?: boolean
-          reading_page?: number
           photo_url?: string | null
           insight_done?: boolean
           insight_minutes?: number
-          completed?: boolean
-          created_at?: string
+        }
+        Relationships: []
+      }
+      study_cycles: {
+        Row: StudyCycle
+        Insert: {
+          id?: string
+          cycle_number: number
+          topic?: string | null
+          account?: string | null
+          start_date: string
+          end_date: string
+          closing_doc?: string | null
+          closed?: boolean
+          closed_at?: string | null
+        }
+        Update: {
+          id?: string
+          cycle_number?: number
+          topic?: string | null
+          account?: string | null
+          start_date?: string
+          end_date?: string
+          closing_doc?: string | null
+          closed?: boolean
+          closed_at?: string | null
+        }
+        Relationships: []
+      }
+      oura_tokens: {
+        Row: OuraTokens
+        Insert: {
+          id?: number
+          refresh_token: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          refresh_token?: string
+          updated_at?: string
         }
         Relationships: []
       }

@@ -1,7 +1,8 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import { differenceInDays, parseISO, format } from 'date-fns'
-import { CHALLENGE_CONFIG, BOTTLES_PER_DAY } from '@/config/challenge'
+import { CHALLENGE_CONFIG } from '@/config/challenge'
+import type { StudyCycle } from '@/lib/supabase'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -48,26 +49,39 @@ export function dayNumberFor(dateISO: string, currentRunStart: string): number {
   return differenceInDays(parseISO(dateISO), parseISO(currentRunStart)) + 1
 }
 
-// Verifica las 6 tasks reales de un día — la fuente de verdad del cierre.
-// `completed` es un derivado de esto; nunca al revés.
+// Verifica las 4 tasks reales de un día del reto "100 Días" — la fuente de
+// verdad del cierre. `completed` es un derivado de esto; nunca al revés.
+// Si el día es el end_date de un ciclo de estudio activo, además requiere
+// que ese ciclo esté cerrado (con su documento) — sin eso, la Regla 1 no
+// se cumple aunque el bloque de 90 min sí esté marcado.
 type DayTasks = {
+  date: string
+  study_block_done: boolean
   gym_done: boolean
-  cardio_done: boolean
-  water_bottles: number
-  diet_done: boolean
   reading_done: boolean
-  photo_url: string | null
+  steps: number
 }
 
-export function isDayComplete(day: DayTasks): boolean {
+export function isCycleCloseDay(dateStr: string, cycle: StudyCycle | null): boolean {
+  return !!cycle && cycle.end_date === dateStr
+}
+
+export function isDayComplete(day: DayTasks, cycle: StudyCycle | null): boolean {
+  const cycleOk = !isCycleCloseDay(day.date, cycle) || !!cycle?.closed
   return (
+    day.study_block_done &&
+    cycleOk &&
     day.gym_done &&
-    day.cardio_done &&
-    day.water_bottles >= BOTTLES_PER_DAY &&
-    day.diet_done &&
     day.reading_done &&
-    !!day.photo_url
+    day.steps >= CHALLENGE_CONFIG.stepsGoal
   )
+}
+
+// Techo absoluto del reto — un reset nunca puede hacer que el reto siga
+// corriendo más allá de esta fecha, sin importar cuántas veces se haya
+// reseteado current_run_start.
+export function isChallengeWindowOver(dateISO: string): boolean {
+  return dateISO > CHALLENGE_CONFIG.endDate
 }
 
 export function isPastDay(dateStr: string): boolean {

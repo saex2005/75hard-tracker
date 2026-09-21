@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { todayART, dayNumberFor } from '@/lib/utils'
 import { buildSystemPrompt } from '@/lib/assistant-context'
 import { AUTH_COOKIE, isValidToken } from '@/lib/auth'
-import { CHALLENGE_CONFIG, BOTTLES_PER_DAY } from '@/config/challenge'
+import { CHALLENGE_CONFIG } from '@/config/challenge'
 import { DAILY_MACROS } from '@/config/nutrition'
 
 export const runtime = 'nodejs'
@@ -28,11 +28,11 @@ const TOOLS: Anthropic.Tool[] = [
   {
     name: 'consultar_dias',
     description:
-      'Historial de días del reto: por día trae tasks completados, minutos de gym/cardio, si se publicó el video del día, botellas de agua, página de lectura y si el día cerró completo. Usar para preguntas sobre días pasados, rachas o patrones.',
+      'Historial de días del reto "100 Días": por día trae si se cumplió el bloque de estudio/implementación, minutos de entrenamiento, página de lectura, pasos, y si el día cerró completo. Usar para preguntas sobre días pasados, rachas o patrones.',
     input_schema: {
       type: 'object',
       properties: {
-        limit: { type: 'number', description: 'Cantidad de días hacia atrás (default 14, máximo 75)' },
+        limit: { type: 'number', description: 'Cantidad de días hacia atrás (default 14, máximo 100)' },
       },
     },
   },
@@ -97,10 +97,11 @@ async function runTool(name: string, input: Record<string, unknown>): Promise<st
   try {
     switch (name) {
       case 'consultar_dias': {
-        const limit = Math.min(Math.max(Number(input.limit) || 14, 1), 75)
+        const limit = Math.min(Math.max(Number(input.limit) || 14, 1), 100)
         const { data, error } = await supabase
           .from('days')
           .select('*')
+          .gte('date', CHALLENGE_CONFIG.startDate)
           .order('date', { ascending: false })
           .limit(limit)
         if (error) throw error
@@ -108,12 +109,10 @@ async function runTool(name: string, input: Record<string, unknown>): Promise<st
           fecha: d.date,
           dia: d.day_number,
           completo: d.completed,
-          gym: d.gym_done ? d.gym_minutes : 0,
-          cardio: d.cardio_done ? d.cardio_minutes : 0,
-          agua_botellas: d.water_bottles,
-          dieta: d.diet_done,
+          estudio_implementacion: d.study_block_done ? d.study_block_minutes : 0,
+          entrenamiento: d.gym_done ? d.gym_minutes : 0,
           lectura_pag: d.reading_done ? d.reading_page : null,
-          foto: !!d.photo_url,
+          pasos: d.steps,
         }))
         return JSON.stringify(rows)
       }
@@ -197,9 +196,10 @@ async function runTool(name: string, input: Record<string, unknown>): Promise<st
 
 async function buildLiveState(): Promise<string> {
   const date = todayART()
-  const [dayRes, stateRes, logsRes, weightRes, memRes] = await Promise.all([
+  const [dayRes, stateRes, cycleRes, logsRes, weightRes, memRes] = await Promise.all([
     supabase.from('days').select('*').eq('date', date).maybeSingle(),
     supabase.from('challenge_state').select('*').eq('id', 1).maybeSingle(),
+    supabase.from('study_cycles').select('*').lte('start_date', date).gte('end_date', date).maybeSingle(),
     supabase.from('food_logs').select('*').eq('date', date).order('created_at'),
     supabase.from('weight_checkpoints').select('*').order('date', { ascending: false }).limit(1),
     supabase.from('assistant_memories').select('*').order('created_at'),
@@ -207,6 +207,7 @@ async function buildLiveState(): Promise<string> {
 
   const day = dayRes.data
   const state = stateRes.data
+  const cycle = cycleRes.data
   const logs = logsRes.data ?? []
   const lastWeight = weightRes.data?.[0]
   const memories = memRes.data ?? []
@@ -226,14 +227,16 @@ async function buildLiveState(): Promise<string> {
 
   const tasks = day
     ? [
-        `gym: ${day.gym_done ? `✅ (${day.gym_minutes} min)` : '❌ pendiente'}`,
-        `cardio: ${day.cardio_done ? `✅ (${day.cardio_minutes} min)` : '❌ pendiente'}`,
-        `agua: ${day.water_bottles}/${BOTTLES_PER_DAY} botellas de 1L`,
-        `dieta: ${day.diet_done ? '✅' : '❌ pendiente (se marca al cierre del día)'}`,
+        `estudio/implementación: ${day.study_block_done ? `✅ (${day.study_block_minutes} min)` : '❌ pendiente'}`,
+        `entrenamiento: ${day.gym_done ? `✅ (${day.gym_minutes} min)` : '❌ pendiente'}`,
         `lectura: ${day.reading_done ? `✅ (pág. ${day.reading_page})` : '❌ pendiente'}`,
-        `foto: ${day.photo_url ? '✅' : '❌ pendiente'}`,
+        `pasos: ${day.steps}/${CHALLENGE_CONFIG.stepsGoal}${day.steps >= CHALLENGE_CONFIG.stepsGoal ? ' ✅' : ' ❌'}`,
       ].join('\n- ')
     : 'todavía no hay registro del día en la app'
+
+  const cycleBlock = cycle
+    ? `Ciclo ${cycle.cycle_number} (${cycle.start_date} → ${cycle.end_date}) · tema: ${cycle.topic || 'sin definir'} · cuenta: ${cycle.account || 'sin definir'} · ${cycle.closed ? 'cerrado ✅' : cycle.end_date === date ? 'HOY es el día de cierre, falta el documento' : 'abierto'}`
+    : 'sin ciclo activo para hoy'
 
   const memoriesBlock = memories.length
     ? memories.map((m) => `- [${m.id}] ${m.content}`).join('\n')
@@ -243,12 +246,14 @@ async function buildLiveState(): Promise<string> {
 
 - Fecha: ${diaSemana} ${date}, ${hora} hs (Argentina)
 - ${preChallenge ? `PRE-INICIO: el reto arranca el ${CHALLENGE_CONFIG.startDate}` : `Día ${dayNumber ?? '?'} de ${CHALLENGE_CONFIG.totalDays}`}${state ? ` · reinicios: ${state.total_restarts} · mejor racha: ${state.best_streak}` : ''}
-- Último peso registrado: ${lastWeight ? `${lastWeight.weight_kg} kg (${lastWeight.date})` : '87 kg (baseline 2026-07-03)'}
+- Último peso registrado: ${lastWeight ? `${lastWeight.weight_kg} kg (${lastWeight.date})` : 'sin registros'}
 
 Tasks de hoy:
 - ${tasks}
 
-Macros de hoy (tracker, informativo): ${Math.round(totals.kcal)} kcal / ${Math.round(totals.p)}g P / ${Math.round(totals.c)}g C / ${Math.round(totals.g)}g G — objetivo ${DAILY_MACROS.kcal} / ${DAILY_MACROS.protein}P / ${DAILY_MACROS.carbs}C / ${DAILY_MACROS.fat}G
+Ciclo de estudio activo: ${cycleBlock}
+
+Macros de hoy (tracker personal, informativo — la dieta ya NO es regla del reto): ${Math.round(totals.kcal)} kcal / ${Math.round(totals.p)}g P / ${Math.round(totals.c)}g C / ${Math.round(totals.g)}g G — referencia ${DAILY_MACROS.kcal} / ${DAILY_MACROS.protein}P / ${DAILY_MACROS.carbs}C / ${DAILY_MACROS.fat}G
 Comidas registradas: ${comidas}
 
 Tus memorias guardadas:

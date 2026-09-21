@@ -4,11 +4,16 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import dynamicImport from 'next/dynamic'
-import { supabase, type DayRecord, type ChallengeState, type WeightCheckpoint } from '@/lib/supabase'
-import { CHALLENGE_CONFIG, BOTTLES_PER_DAY } from '@/config/challenge'
+import { supabase, type ChallengeState, type WeightCheckpoint } from '@/lib/supabase'
+import { CHALLENGE_CONFIG } from '@/config/challenge'
 import { calcDayNumber } from '@/lib/utils'
 
 const WeightChart = dynamicImport(() => import('@/components/WeightChart'), { ssr: false })
+
+// Solo se muestran stats del reto activo ("100 Días", desde el 23/09/2026) —
+// el historial del 75 Hard queda disponible en /historia, no se mezclan
+// campos de eras distintas acá.
+const NEW_ERA_START = CHALLENGE_CONFIG.startDate
 
 type Stats = {
   challengeState: ChallengeState
@@ -17,12 +22,10 @@ type Stats = {
   completedDays: number
   failedDays: number
   taskCompletion: {
+    study: number
     gym: number
-    cardio: number
-    water: number
-    diet: number
     reading: number
-    photo: number
+    steps: number
   }
   weights: WeightCheckpoint[]
 }
@@ -33,29 +36,28 @@ export default function StatsPage() {
 
   useEffect(() => {
     async function load() {
-      const [{ data: cs }, { data: days }, { data: weights }] = await Promise.all([
+      const [{ data: cs }, { data: allDays }, { data: weights }] = await Promise.all([
         supabase.from('challenge_state').select('*').eq('id', 1).single(),
-        supabase.from('days').select('*').order('day_number', { ascending: true }),
+        supabase.from('days').select('*').order('date', { ascending: true }),
         supabase.from('weight_checkpoints').select('*').order('date', { ascending: true }),
       ])
 
-      if (!cs || !days) {
+      if (!cs || !allDays) {
         setLoading(false)
         return
       }
 
+      const days = allDays.filter((d) => d.date >= NEW_ERA_START)
       const dayNumber = calcDayNumber(cs.current_run_start)
       const total = days.length
       const completed = days.filter((d) => d.completed).length
       const failed = total - completed
 
       const taskCompletion = {
+        study: pct(days.filter((d) => d.study_block_done).length, total),
         gym: pct(days.filter((d) => d.gym_done).length, total),
-        cardio: pct(days.filter((d) => d.cardio_done).length, total),
-        water: pct(days.filter((d) => d.water_bottles >= BOTTLES_PER_DAY).length, total),
-        diet: pct(days.filter((d) => d.diet_done).length, total),
         reading: pct(days.filter((d) => d.reading_done).length, total),
-        photo: pct(days.filter((d) => d.photo_url).length, total),
+        steps: pct(days.filter((d) => d.steps >= CHALLENGE_CONFIG.stepsGoal).length, total),
       }
 
       setStats({
@@ -100,12 +102,10 @@ export default function StatsPage() {
   }
 
   const tasks = [
-    { label: '💪 Gym', value: stats.taskCompletion.gym },
-    { label: '🏃 Cardio', value: stats.taskCompletion.cardio },
-    { label: '💧 Agua', value: stats.taskCompletion.water },
-    { label: '🥗 Dieta', value: stats.taskCompletion.diet },
+    { label: '📚 Estudio/Implementación', value: stats.taskCompletion.study },
+    { label: '💪 Entrenamiento', value: stats.taskCompletion.gym },
     { label: '📖 Lectura', value: stats.taskCompletion.reading },
-    { label: '📸 Foto', value: stats.taskCompletion.photo },
+    { label: '👟 Pasos', value: stats.taskCompletion.steps },
   ]
 
   return (
@@ -120,19 +120,17 @@ export default function StatsPage() {
         aria-label="Métricas del reto"
       >
         <div className="grid grid-cols-2 gap-2">
-          <Metric label="Día actual" value={stats.dayNumber} unit="/ 75" />
+          <Metric label="Día actual" value={stats.dayNumber} unit={`/ ${CHALLENGE_CONFIG.totalDays}`} />
           <Metric label="Mejor racha" value={stats.challengeState.best_streak} unit="días" />
           <Metric label="Completados" value={stats.completedDays} unit="días" accent />
           <Metric label="Reintentos" value={stats.challengeState.total_restarts} />
         </div>
-        {stats.dayNumber >= 1 && stats.dayNumber < 75 && (() => {
-          const daysLeft = 75 - stats.dayNumber
-          const end = new Date()
-          end.setDate(end.getDate() + daysLeft)
+        {stats.dayNumber >= 1 && stats.dayNumber < CHALLENGE_CONFIG.totalDays && (() => {
+          const end = new Date(CHALLENGE_CONFIG.endDate + 'T00:00:00')
           const dateStr = end.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })
           return (
             <p className="text-xs text-[#52525B] font-medium text-center pt-1">
-              A este ritmo terminás el <span className="text-[#A1A1AA]">{dateStr}</span>
+              El reto termina el <span className="text-[#A1A1AA]">{dateStr}</span>
             </p>
           )
         })()}

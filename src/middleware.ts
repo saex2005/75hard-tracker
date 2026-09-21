@@ -5,7 +5,9 @@ import { AUTH_COOKIE, isValidToken } from '@/lib/auth'
 // - /login y /api/login: el login mismo
 // - /api/notify: la llama n8n con su propio Bearer
 // - /api/cron: la llama Vercel Cron con su propio Bearer
-const PUBLIC_PREFIXES = ['/login', '/api/login', '/api/notify', '/api/cron']
+// - /api/oura/callback: la llama Oura al redirigir tras la autorización —
+//   no siempre trae la cookie de sesión de la app
+const PUBLIC_PREFIXES = ['/login', '/api/login', '/api/notify', '/api/cron', '/api/oura/callback']
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl

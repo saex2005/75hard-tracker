@@ -4,7 +4,7 @@ import webpush from 'web-push'
 import type { Database } from '@/lib/supabase'
 import { todayART } from '@/lib/utils'
 import { checkAndReset, ensureTodayRow } from '@/lib/reset'
-import { BOTTLES_PER_DAY } from '@/config/challenge'
+import { CHALLENGE_CONFIG } from '@/config/challenge'
 
 webpush.setVapidDetails(
   process.env.VAPID_EMAIL!,
@@ -49,6 +49,17 @@ export async function GET(request: NextRequest) {
   // el día UTC ya es el siguiente (bug que impedía el evening y rompía el reset)
   const todayISO = todayART()
 
+  // Tipos sin task equivalente en el reto "100 Días" (23/09/2026 en adelante) —
+  // agua y macros/dieta dejaron de ser reglas del reto. Quedan inertes acá
+  // por si el workflow de n8n todavía los llama; desactivar/borrar esos
+  // workflows en n8n para que dejen de correr del todo.
+  if (type === 'water') {
+    return NextResponse.json({ sent: 0, reason: 'water task removed 23/09/2026 — reto 100 Días' })
+  }
+  if (type === 'macros') {
+    return NextResponse.json({ sent: 0, reason: 'diet is out of scope since 23/09/2026 — reto 100 Días' })
+  }
+
   // Garantizar que la fila de hoy exista — si no, las notificaciones se apagan
   // justo los días que no se abrió la app (cuando más se necesitan)
   const { dayNumber, active } = await ensureTodayRow(supabase)
@@ -58,7 +69,7 @@ export async function GET(request: NextRequest) {
 
   const { data: today } = await supabase
     .from('days')
-    .select('completed, day_number, gym_done, cardio_done, water_bottles, diet_done, reading_done, photo_url')
+    .select('completed, day_number, study_block_done, study_block_minutes, gym_done, gym_minutes, reading_done, steps')
     .eq('date', todayISO)
     .single()
 
@@ -77,174 +88,102 @@ export async function GET(request: NextRequest) {
 
   // Día derivado de current_run_start — nunca el day_number congelado de la fila
   const d = dayNumber
-  const BOTTLES_GOAL = BOTTLES_PER_DAY
+  const total = CHALLENGE_CONFIG.totalDays
   let sent = 0
 
   // --- KICKOFF 07:30 ARS ---
   if (type === 'kickoff') {
-    const title = `75 Hard — Día ${d} de 75`
+    const title = `100 Días — Día ${d} de ${total}`
     const body = pick([
-      `Otro día. Sin excusas, sin cheat days. A romperla.`,
+      `Otro día. Sin excusas. A romperla.`,
       `Día ${d}. La mayoría no llega hasta acá. Vos sí.`,
-      `Arrancó el día ${d}. Seis tasks. Las hacés todas.`,
-      `Día ${d} de ${75 - d + 1} que quedan. Empezá por el gym.`,
+      `Arrancó el día ${d}. Cuatro reglas. Las hacés todas.`,
+      `Día ${d} de ${total - d + 1} que quedan. Empezá por el bloque de estudio.`,
       `Cada día que completás es uno que no podés perder. Arrancá.`,
-      d <= 7
-        ? `Primera semana. La más difícil. No la cagas ahora.`
-        : d <= 30
-        ? `Mes uno casi completo. Seguís en pie.`
-        : d <= 60
+      d <= 14
+        ? `Primer ciclo. No la cagues ahora.`
+        : d <= 50
+        ? `Vas por la mitad. Seguís en pie.`
+        : d <= 85
         ? `Más de la mitad. No aflojés ahora.`
-        : `Recta final. Quedan ${75 - d + 1} días. No pares.`,
+        : `Recta final. Quedan ${total - d + 1} días. No pares.`,
     ])
     sent = await sendPush(subs, title, body)
   }
 
-  // --- AGUA 11:00 ARS ---
-  if (type === 'water') {
-    const bottles = today.water_bottles
-    if (bottles >= 2) {
-      return NextResponse.json({ sent: 0, reason: 'water on track' })
-    }
-    const falta = BOTTLES_GOAL - bottles
-    const body = pick([
-      `Llevás ${bottles}/${BOTTLES_GOAL} botellas. Tomá agua ahora, no lo dejés para la noche.`,
-      `${bottles} botellas. Te faltan ${falta}. A mitad del día ya deberías tener 4.`,
-      `El galón no se completa solo. ${bottles}/${BOTTLES_GOAL}. Dale con el agua.`,
-      `Agua: ${bottles}/${BOTTLES_GOAL}. Si lo dejás para la noche, va a ser un infierno.`,
-    ])
-    sent = await sendPush(subs, '💧 Agua — chequeá el progreso', body)
-  }
-
   // --- PROGRESO GENERAL 14:00 ARS ---
   if (type === 'progress') {
-    const done = [today.gym_done, today.cardio_done, today.diet_done, today.reading_done, !!today.photo_url].filter(Boolean).length
-    const pending = 5 - done
-    const water = today.water_bottles
+    const done = [today.study_block_done, today.gym_done, today.reading_done, today.steps >= CHALLENGE_CONFIG.stepsGoal].filter(Boolean).length
+    const pending = 4 - done
 
-    if (pending === 0 && water >= BOTTLES_GOAL) {
+    if (pending === 0) {
       return NextResponse.json({ sent: 0, reason: 'all done' })
     }
 
     let body: string
-    if (pending === 0) {
-      body = `Tasks listas. Solo te falta el agua — llevás ${water}/${BOTTLES_GOAL} botellas.`
-    } else if (done === 0) {
+    if (done === 0) {
       body = pick([
         `Son las 14hs y no marcaste nada todavía. Arrancá ya.`,
-        `Ninguna task completada. El día no se va a completar solo.`,
+        `Ninguna regla completada. El día no se va a completar solo.`,
       ])
     } else {
-      body = `${done}/5 tasks listas. Faltan ${pending}. Agua: ${water}/${BOTTLES_GOAL}. Vamos.`
+      body = `${done}/4 reglas listas. Faltan ${pending}. Vamos.`
     }
 
     sent = await sendPush(subs, `Día ${d} — estado a las 14hs`, body)
   }
 
-  // --- (ex VIDEO DIARIO 15:15 ARS) ---
-  // Task de InsightMkt/video sacado del reto el 16/07/2026 — ya no es binario
-  // ni resetea. Este tipo queda inerte por si el workflow de n8n todavía lo llama;
-  // desactivar/borrar el workflow en n8n para que deje de correr del todo.
+  // --- ESTUDIO/IMPLEMENTACIÓN 15:15 ARS (repurpuesto — ex tipo "insight", inerte desde julio) ---
   if (type === 'insight') {
-    return NextResponse.json({ sent: 0, reason: 'insight task removed 16/07/2026' })
+    if (today.study_block_done) {
+      return NextResponse.json({ sent: 0, reason: 'study block done' })
+    }
+    const body = pick([
+      `90 minutos de estudio/implementación sin marcar. Bloqueá el tiempo ahora.`,
+      `El bloque de hoy sigue pendiente. Es la regla con más peso — no la dejes para último momento.`,
+      `Sin bloque de estudio/implementación todavía. 90 minutos, arrancá.`,
+    ])
+    sent = await sendPush(subs, '📚 Estudio/Implementación pendiente', body)
   }
 
-  // --- GYM + CARDIO 17:30 ARS ---
+  // --- ENTRENAMIENTO 17:30 ARS ---
   if (type === 'gymcardio') {
-    const gymPending = !today.gym_done
-    const cardioPending = !today.cardio_done
-
-    if (!gymPending && !cardioPending) {
-      return NextResponse.json({ sent: 0, reason: 'both done' })
+    if (today.gym_done) {
+      return NextResponse.json({ sent: 0, reason: 'training done' })
     }
-
-    let body: string
-    if (gymPending && cardioPending) {
-      body = pick([
-        'Gym y cardio sin marcar. Quedan pocas horas. No lo dejés para después.',
-        'Dos entrenamientos pendientes. Son 90 minutos en total. Ahora.',
-        'Sin gym, sin cardio. Si no arrancás ahora, el día se te va.',
-      ])
-    } else if (gymPending) {
-      body = pick([
-        'Cardio listo, gym pendiente. 45 minutos y cerrás esa task.',
-        'Te falta el gym. Terminalo hoy.',
-      ])
-    } else {
-      body = pick([
-        'Gym listo, cardio pendiente. Salí a correr aunque sea.',
-        'El cardio outdoor sigue pendiente. 45 minutos afuera.',
-      ])
-    }
-
-    sent = await sendPush(subs, '💪 Gym / Cardio pendiente', body)
+    const body = pick([
+      'Entrenamiento sin marcar. Quedan pocas horas. No lo dejés para después.',
+      '45 minutos de entrenamiento pendientes. Ahora.',
+      'Sin entrenamiento todavía. Si no arrancás ahora, el día se te va.',
+    ])
+    sent = await sendPush(subs, '💪 Entrenamiento pendiente', body)
   }
 
-  // --- LECTURA + FOTO 19:30 ARS ---
+  // --- LECTURA + PASOS 19:30 ARS ---
   if (type === 'readingphoto') {
     const readingPending = !today.reading_done
-    const photoPending = !today.photo_url
+    const stepsPending = today.steps < CHALLENGE_CONFIG.stepsGoal
 
-    if (!readingPending && !photoPending) {
+    if (!readingPending && !stepsPending) {
       return NextResponse.json({ sent: 0, reason: 'both done' })
     }
 
     let body: string
-    if (readingPending && photoPending) {
+    if (readingPending && stepsPending) {
       body = pick([
-        '10 páginas y una foto. 15 minutos en total. No los dejes para mañana.',
-        'Lectura y foto sin hacer. Son las más fáciles — hacelas ya.',
-        'Dos tasks rápidas pendientes: foto y lectura. Cerrá eso ahora.',
+        '10 páginas y los pasos sin cerrar. Aprovechá una caminata para las dos cosas.',
+        'Lectura y pasos pendientes. Salir a caminar con el libro de audio no cuenta — pero la caminata sí suma pasos.',
       ])
     } else if (readingPending) {
       body = pick([
-        '10 páginas. Las podés leer en 15 minutos. Agarra el libro.',
+        '10 páginas. Las podés leer en 15 minutos. Agarrá el libro.',
         'La lectura sigue pendiente. No te vayas a dormir sin hacerla.',
       ])
     } else {
-      body = pick([
-        'La foto del día no está. 30 segundos y listo.',
-        'Falta la foto de progreso. Hacela antes de que se te olvide.',
-      ])
+      body = `Te faltan pasos: ${today.steps}/${CHALLENGE_CONFIG.stepsGoal}. Una caminata corta cierra la regla.`
     }
 
-    sent = await sendPush(subs, '📖 📸 Últimos detalles', body)
-  }
-
-  // --- MACROS 20:45 ARS ---
-  if (type === 'macros') {
-    const { data: logs } = await supabase
-      .from('food_logs')
-      .select('kcal, protein')
-      .eq('date', todayISO)
-
-    const KCAL_GOAL = 2350
-    const PROTEIN_GOAL = 170
-
-    let body: string
-    if (!logs || logs.length === 0) {
-      body = pick([
-        'No registraste ninguna comida hoy. Entrá a Dieta → Registro y cargá el día.',
-        'Cero comidas registradas. Los quick-add del plan son 1 tap — no hay excusa.',
-      ])
-    } else {
-      const kcal = Math.round(logs.reduce((a, l) => a + Number(l.kcal), 0))
-      const protein = Math.round(logs.reduce((a, l) => a + Number(l.protein), 0))
-      const kcalLeft = KCAL_GOAL - kcal
-      const proteinLeft = PROTEIN_GOAL - protein
-
-      if (kcalLeft < -100) {
-        body = `⚠️ Llevás ${kcal} kcal — te pasaste ${Math.abs(kcalLeft)} del objetivo. Cená liviano: proteína + verduras.`
-      } else if (proteinLeft > 30) {
-        body = `Llevás ${kcal}/${KCAL_GOAL} kcal pero solo ${protein}g de proteína. Te faltan ${proteinLeft}g — la cena tiene que ser proteica.`
-      } else if (kcalLeft > 100) {
-        body = `Vas bien: ${kcal}/${KCAL_GOAL} kcal, ${protein}g de proteína. Te quedan ${kcalLeft} kcal para la cena.`
-      } else {
-        body = `Día clavado: ${kcal}/${KCAL_GOAL} kcal y ${protein}g de proteína. Cerrá con la cena del plan y listo.`
-      }
-    }
-
-    sent = await sendPush(subs, '🥗 Macros del día', body)
+    sent = await sendPush(subs, '📖 👟 Últimos detalles', body)
   }
 
   // --- CIERRE + RESET 21:05 ARS ---
@@ -259,12 +198,10 @@ export async function GET(request: NextRequest) {
     }
 
     const pending = [
+      !today.study_block_done,
       !today.gym_done,
-      !today.cardio_done,
-      !today.diet_done,
       !today.reading_done,
-      !today.photo_url,
-      today.water_bottles < BOTTLES_GOAL,
+      today.steps < CHALLENGE_CONFIG.stepsGoal,
     ].filter(Boolean).length
 
     let body: string
@@ -272,14 +209,14 @@ export async function GET(request: NextRequest) {
       body = 'Completaste todo. El día se cierra solo — a descansar.'
     } else if (pending === 1) {
       body = pick([
-        'Te falta 1 sola task. No rompas la racha por una task.',
-        '1 task pendiente. Terminala y cerrá el día.',
+        'Te falta 1 sola regla. No rompas la racha por eso.',
+        '1 regla pendiente. Terminala y cerrá el día.',
       ])
     } else {
       body = pick([
-        `${pending} tasks pendientes. Todavía llegás. Arrancá ya.`,
-        `Quedan ${pending} tasks para cerrar el Día ${dToday}. No lo dejes ir.`,
-        `Día ${dToday} en riesgo. ${pending} tasks sin completar. Movete.`,
+        `${pending} reglas pendientes. Todavía llegás. Arrancá ya.`,
+        `Quedan ${pending} reglas para cerrar el Día ${dToday}. No lo dejes ir.`,
+        `Día ${dToday} en riesgo. ${pending} reglas sin completar. Movete.`,
       ])
     }
 
